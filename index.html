@@ -16,7 +16,6 @@
         padding: 20px;
     }
 
-    /* BOARD WRAPPER – RESPONSIVE SCALE */
     #board-wrapper {
         width: 500px;
         height: 500px;
@@ -24,7 +23,6 @@
         transform-origin: top center;
     }
 
-    /* BOARD */
     #board {
         width: 500px;
         height: 500px;
@@ -47,10 +45,19 @@
         justify-content: space-between;
         text-align: center;
         font-size: 11px;
+        position: relative;
     }
 
     .price { font-size: 10px; font-weight: bold; }
     .label { font-size: 12px; font-weight: bold; }
+
+    .owner {
+        position: absolute;
+        width: 100%;
+        height: 4px;
+        bottom: 0;
+        left: 0;
+    }
 
     #center {
         grid-row: 2 / 11;
@@ -64,19 +71,18 @@
         opacity:0.2;
     }
 
-    /* TOKEN */
     .token {
         width: 20px;
         height: 20px;
         border-radius: 50%;
         position: absolute;
         transition: all 0.5s ease;
+        z-index: 2;
     }
 
-    #player { background: red; }
-    #computer { background: blue; }
+    #player { background: blue; } 
+    #computer { background: red; } 
 
-    /* CONTROLS */
     #controls {
         margin-top: 15px;
         display: flex;
@@ -86,9 +92,29 @@
 
     button { padding: 8px 12px; font-size: 14px; cursor: pointer; }
 
-    #info { margin-top: 10px; font-weight: bold; }
+    #info, #notification { margin-top: 10px; font-weight: bold; }
 
-    /* RESPONSIVE SCALE */
+    #helpBox {
+        display:none; 
+        margin-top:10px; 
+        border:1px solid #000; 
+        padding:10px; 
+        background:#fff;
+    }
+
+    .card-popup {
+        position: absolute;
+        background: #fff;
+        border: 2px solid #000;
+        padding: 10px;
+        width: 200px;
+        min-height: 80px;
+        display: none;
+        z-index: 10;
+        text-align: center;
+        cursor: pointer;
+    }
+
     @media (max-width: 550px) { #board-wrapper { transform: scale(0.9); } }
     @media (max-width: 480px) { #board-wrapper { transform: scale(0.8); } }
     @media (max-width: 420px) { #board-wrapper { transform: scale(0.7); } }
@@ -99,134 +125,189 @@
 
 <div id="board-wrapper">
     <div id="board">
+        <!-- Tiles tetap sama, 40 kotak + owner -->
+        <!-- ROW ATAS -->
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro1</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro2</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Tax</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail1</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro3</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro4</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
 
-        <!-- ROW ATAS (10 tiles) -->
-        <div class="tile"><div class="price">$0</div><div class="label">GO</div></div>
-        <div class="tile"><div class="price">$60</div><div class="label">Pro1</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
-        <div class="tile"><div class="price">$60</div><div class="label">Pro2</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Tax</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Rail1</div></div>
-        <div class="tile"><div class="price">$100</div><div class="label">Pro3</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
-        <div class="tile"><div class="price">$100</div><div class="label">Pro4</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Jail</div></div>
+        <!-- SISI KANAN -->
+        <div class="tile"><div class="price">$140</div><div class="label">Pro5</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$140</div><div class="label">Pro6</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$160</div><div class="label">Pro7</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail2</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$180</div><div class="label">Pro8</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Pro9</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GoJ</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$50</div><div class="label">ExtraR</div><div class="owner"></div></div>
 
-        <!-- SISI KANAN (10 tiles) -->
-        <div class="tile"><div class="price">$140</div><div class="label">Pro5</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
-        <div class="tile"><div class="price">$140</div><div class="label">Pro6</div></div>
-        <div class="tile"><div class="price">$160</div><div class="label">Pro7</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Rail2</div></div>
-        <div class="tile"><div class="price">$180</div><div class="label">Pro8</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Pro9</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">GoJ</div></div>
-        <div class="tile"><div class="price">$50</div><div class="label">ExtraR</div></div>
+        <!-- BOTTOM SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Free</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro10</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro11</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$240</div><div class="label">Pro12</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail3</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro13</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro14</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$280</div><div class="label">Pro15</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
 
-        <!-- BOTTOM SIDE (10 tiles) -->
-        <div class="tile"><div class="price">$0</div><div class="label">Free</div></div>
-        <div class="tile"><div class="price">$220</div><div class="label">Pro10</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
-        <div class="tile"><div class="price">$220</div><div class="label">Pro11</div></div>
-        <div class="tile"><div class="price">$240</div><div class="label">Pro12</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Rail3</div></div>
-        <div class="tile"><div class="price">$260</div><div class="label">Pro13</div></div>
-        <div class="tile"><div class="price">$260</div><div class="label">Pro14</div></div>
-        <div class="tile"><div class="price">$280</div><div class="label">Pro15</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">GO</div></div>
+        <!-- LEFT SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro16</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro17</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$320</div><div class="label">Pro18</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail4</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$350</div><div class="label">Pro19</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$400</div><div class="label">Pro20</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Tax</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$50</div><div class="label">ExtraL</div><div class="owner"></div></div>
 
-        <!-- LEFT SIDE (10 tiles) -->
-        <div class="tile"><div class="price">$0</div><div class="label">Jail</div></div>
-        <div class="tile"><div class="price">$300</div><div class="label">Pro16</div></div>
-        <div class="tile"><div class="price">$300</div><div class="label">Pro17</div></div>
-        <div class="tile"><div class="price">$320</div><div class="label">Pro18</div></div>
-        <div class="tile"><div class="price">$200</div><div class="label">Rail4</div></div>
-        <div class="tile"><div class="price">$350</div><div class="label">Pro19</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
-        <div class="tile"><div class="price">$400</div><div class="label">Pro20</div></div>
-        <div class="tile"><div class="price">$0</div><div class="label">Tax</div></div>
-        <div class="tile"><div class="price">$50</div><div class="label">ExtraL</div></div>
-
-        <!-- CENTER -->
         <div id="center">NextPoly</div>
-
-        <!-- TOKENS -->
         <div id="player" class="token"></div>
         <div id="computer" class="token"></div>
-
     </div>
 </div>
 
-<!-- INFORMASI & TOMBOL -->
 <div id="controls">
     <button id="rollBtn">Roll Dice</button>
     <button id="helpBtn">?</button>
 </div>
-<div id="info">Mobil = Kamu | Topi = Komputer</div>
-<div id="turnIndicator">Giliran: Kamu</div>
-<div id="helpBox" style="display:none; margin-top:10px; border:1px solid #000; padding:10px; background:#fff;">
+<div id="info">Blue = Player | Red = Computer</div>
+<div id="notification"></div>
+<div id="turnIndicator">Turn: Player</div>
+<div id="helpBox">
     Klik tombol "Roll Dice" untuk melempar dadu.<br>
     Token bergerak sesuai angka dadu.<br>
-    Mobil = Pemain | Topi = Komputer.
+    Blue = Player | Red = Computer.
 </div>
 
+<div id="cardPopup" class="card-popup"></div>
+
 <script>
-    const rollBtn = document.getElementById('rollBtn');
-    const helpBtn = document.getElementById('helpBtn');
-    const helpBox = document.getElementById('helpBox');
-    const turnIndicator = document.getElementById('turnIndicator');
+const rollBtn = document.getElementById('rollBtn');
+const helpBtn = document.getElementById('helpBtn');
+const helpBox = document.getElementById('helpBox');
+const turnIndicator = document.getElementById('turnIndicator');
+const notification = document.getElementById('notification');
+const cardPopup = document.getElementById('cardPopup');
 
-    let playerPos = 0;
-    let computerPos = 0;
-    const totalTiles = 40;
-    let isPlayerTurn = true;
+let playerPos = 0;
+let computerPos = 0;
+const totalTiles = 40;
+let isPlayerTurn = true;
 
-    const playerToken = document.getElementById('player');
-    const computerToken = document.getElementById('computer');
-    const board = document.getElementById('board');
-    const tileSize = board.offsetWidth / 11;
+const playerToken = document.getElementById('player');
+const computerToken = document.getElementById('computer');
+const board = document.getElementById('board');
+const tiles = Array.from(document.getElementsByClassName('tile'));
+const tileSize = board.offsetWidth / 11;
 
-    function getTilePosition(index) {
-        let row = 0, col = 0;
-        if(index < 10){ row=0; col=index; }
-        else if(index < 19){ row=index-9; col=10; }
-        else if(index < 29){ row=10; col=28-index; }
-        else{ row=39-index; col=0; }
-        return {top: row*tileSize, left: col*tileSize};
+let owners = Array(totalTiles).fill(null);
+
+const chanceCards = [
+    {text:"Advance to GO", action:()=>{playerPos=0; moveToken(playerToken,0); updateNotification("Player moves to GO");}},
+    {text:"Pay $50", action:()=>{updateNotification("Player pays $50");}}
+];
+const communityCards = [
+    {text:"Receive $50", action:()=>{updateNotification("Player receives $50");}},
+    {text:"Go to Jail", action:()=>{playerPos=10; moveToken(playerToken,10); updateNotification("Player goes to Jail");}}
+];
+
+function getTilePosition(index){
+    let row=0,col=0;
+    if(index<10){row=0; col=index;}
+    else if(index<19){row=index-9; col=10;}
+    else if(index<29){row=10; col=28-index;}
+    else{row=39-index; col=0;}
+    return {top: row*tileSize, left: col*tileSize};
+}
+
+function moveToken(token, position){
+    const pos = getTilePosition(position);
+    token.style.top = pos.top + 'px';
+    token.style.left = pos.left + 'px';
+    checkTile(token, position);
+}
+
+function updateNotification(msg){ notification.innerText = msg; }
+
+function checkTile(token, index){
+    const tile = tiles[index];
+    const label = tile.querySelector('.label').innerText;
+    
+    if(label.startsWith('Pro')){
+        if(!owners[index] && token.id==='player'){ 
+            if(confirm("Do you want to buy this property?")){
+                owners[index]='player';
+                tile.querySelector('.owner').style.background='blue';
+            }
+        } else if(!owners[index] && token.id==='computer'){
+            owners[index]='computer';
+            tile.querySelector('.owner').style.background='red';
+        } else if(owners[index] && owners[index]!==token.id.replace('player','player').replace('computer','computer')){
+            updateNotification(token.id==='player'?"Pay rent to computer":"Pay rent to player");
+        }
     }
 
-    function moveToken(token, position){
-        const pos = getTilePosition(position);
-        token.style.top = pos.top + 'px';
-        token.style.left = pos.left + 'px';
+    if(label==='Cha'){ showCard(chanceCards); }
+    if(label==='Com'){ showCard(communityCards); }
+
+    if(label==='Jail'){ updateNotification("Landed on Jail"); }
+    if(label==='Tax'){ updateNotification("Pay tax $200"); }
+    if(label==='GoJ'){ updateNotification("Go to Jail"); }
+    if(label==='Free'){ updateNotification("Free Parking"); }
+}
+
+function showCard(deck){
+    const card = deck[Math.floor(Math.random()*deck.length)];
+    cardPopup.innerText = card.text;
+    cardPopup.style.display='block';
+    cardPopup.style.top='200px';
+    cardPopup.style.left='150px';
+
+    cardPopup.onclick = () => {
+        card.action();
+        cardPopup.style.display='none';
+        cardPopup.onclick = null;
     }
+}
 
-    rollBtn.addEventListener('click', ()=>{
-        if(!isPlayerTurn) return;
-        const dice = Math.floor(Math.random()*6)+1;
-        playerPos = (playerPos + dice) % totalTiles;
-        moveToken(playerToken, playerPos);
-        turnIndicator.innerText = "Giliran: Komputer";
-        isPlayerTurn = false;
+rollBtn.addEventListener('click', ()=>{
+    if(!isPlayerTurn) return;
+    const dice = Math.floor(Math.random()*6)+1;
+    playerPos = (playerPos+dice)%totalTiles;
+    moveToken(playerToken,playerPos);
+    turnIndicator.innerText = "Turn: Computer";
+    isPlayerTurn=false;
 
-        setTimeout(()=>{
-            const compDice = Math.floor(Math.random()*6)+1;
-            computerPos = (computerPos + compDice) % totalTiles;
-            moveToken(computerToken, computerPos);
-            turnIndicator.innerText = "Giliran: Kamu";
-            isPlayerTurn = true;
-        }, 1000);
-    });
+    setTimeout(()=>{
+        const compDice = Math.floor(Math.random()*6)+1;
+        computerPos=(computerPos+compDice)%totalTiles;
+        moveToken(computerToken,computerPos);
+        turnIndicator.innerText="Turn: Player";
+        isPlayerTurn=true;
+    },1000);
+});
 
-    helpBtn.addEventListener('click', ()=>{
-        helpBox.style.display = helpBox.style.display === 'none' ? 'block' : 'none';
-    });
+helpBtn.addEventListener('click', ()=>{
+    helpBox.style.display = helpBox.style.display==='none'?'block':'none';
+});
 
-    // Inisialisasi posisi awal
-    moveToken(playerToken, playerPos);
-    moveToken(computerToken, computerPos);
+moveToken(playerToken,playerPos);
+moveToken(computerToken,computerPos);
 </script>
 
 </body>
-    </html>
+            </html>

@@ -3,64 +3,67 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Mini Monopoly - Generic Board</title>
+<title>Mini Monopoly — Classic Board + Smart AI</title>
 <style>
   :root{
-    --bg:#071226; --card:#f8fafc; --muted:#9aa6b2; --accent:#f59e0b;
-    --owner-a:#ef4444; --owner-b:#3b82f6; --owner-c:#10b981; --owner-d:#a78bfa;
-    --board-max:980px;
-    --cell-min:44px; /* ensures tap targets on small phones */
+    --bg:#071226; --panel:#041226; --muted:#9aa6b2; --accent:#f59e0b;
+    --board-max:1000px; --cell-min:46px;
+    /* classic-ish color groups */
+    --c-brown:#8b4513; --c-lightblue:#3aa0ff; --c-pink:#d06aa7; --c-orange:#f28c2b;
+    --c-red:#e03b3b; --c-yellow:#f5d23b; --c-green:#2bb673; --c-blue:#1f4fb4;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:linear-gradient(#071226,#051423); color:#eaf2ff;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:var(--board-max); margin:12px auto; padding:10px; display:grid; grid-template-columns: 1fr 320px; gap:12px;}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(#071226,#041226);color:#eaf2ff}
+  .wrap{max-width:var(--board-max); margin:12px auto; padding:10px; display:grid; grid-template-columns:1fr 340px; gap:12px;}
   @media (max-width:920px){ .wrap{grid-template-columns:1fr; padding:8px} }
 
-  /* Board container scales to width, never zooms; grid is fixed 11x11 */
   .board-wrap{width:100%; overflow:auto}
-  .board{width:100%; max-width:100%; aspect-ratio:1/1; display:grid; grid-template-columns:repeat(11,1fr); grid-template-rows:repeat(11,1fr); gap:6px; background:linear-gradient(180deg,#0b1724,#071226); padding:8px; border-radius:10px;}
-  .cell{background:linear-gradient(180deg,#082033,#071226); border-radius:6px; padding:4px; font-size:11px; color:#dbeafe; display:flex; flex-direction:column; justify-content:space-between; min-width:var(--cell-min); min-height:var(--cell-min)}
-  .corner{background:linear-gradient(180deg,#0f2638,#071226); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center}
-  .edge-title{font-weight:700; font-size:11px; line-height:1; transform-origin:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .board{width:100%; aspect-ratio:1/1; display:grid; grid-template-columns:repeat(11,1fr); grid-template-rows:repeat(11,1fr); gap:6px; background:linear-gradient(180deg,#0b1724,#071226); padding:8px; border-radius:10px}
+  .cell{background:linear-gradient(180deg,#082033,#071226); border-radius:6px; padding:6px; font-size:12px; color:#dbeafe; display:flex; flex-direction:column; justify-content:space-between; min-width:var(--cell-min); min-height:var(--cell-min)}
+  .corner{background:linear-gradient(180deg,#0f2638,#071226); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; padding:6px}
+  .edge-title{font-weight:700; font-size:11px; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .prop-bar{height:8px; border-radius:4px; margin-bottom:6px; width:100%}
   .price{font-size:11px; color:var(--muted)}
   .players-on{display:flex; gap:4px; margin-top:6px; flex-wrap:wrap}
   .pawn{width:16px;height:16px;border-radius:50%;display:inline-block;border:2px solid #071226}
 
-  /* Sidebar */
-  .panel{background:linear-gradient(180deg,#061425,#041226); border-radius:10px; padding:12px; min-height:calc(100% - 24px)}
+  .panel{background:linear-gradient(180deg,var(--panel),#02101a); border-radius:10px; padding:12px}
   .players-list{display:flex; flex-direction:column; gap:8px; margin-bottom:10px}
   .player{display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; background:rgba(255,255,255,0.02)}
   .player.active{outline:2px solid rgba(255,255,255,0.04)}
   .controls{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap}
-  button{background:var(--accent); border:none; color:#071226; font-weight:700; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px}
-  button.alt{background:transparent; color:var(--card); border:1px solid rgba(255,255,255,0.06)}
-  .log{background:rgba(255,255,255,0.02); padding:8px; height:200px; overflow:auto; border-radius:8px; font-size:13px; color:#cbe7ff}
+  button{background:var(--accent); border:none; color:#071226; font-weight:700; padding:8px 10px; border-radius:8px; cursor:pointer}
+  button.alt{background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04)}
+  .log{background:rgba(255,255,255,0.02); padding:8px; height:220px; overflow:auto; border-radius:8px; font-size:13px; color:#cbe7ff}
   .small{font-size:13px; color:var(--muted)}
   .prop-list{margin-top:8px; font-size:13px; color:var(--muted)}
 
-  /* rotate text for edge cells (top/right/bottom/left) */
-  .edge-vertical { writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; }
-  .edge-horizontal { text-align:center; }
-  .cell.clickable { cursor:pointer; }
-  /* ensure tap targets comfortable on mobile */
+  /* side rotation */
+  .edge-vertical{writing-mode:vertical-rl; transform:rotate(180deg); text-align:center}
+  .edge-horizontal{text-align:center}
+  .cell.clickable{cursor:pointer}
+
   @media (max-width:420px){
     .pawn{width:14px;height:14px}
-    .player { padding:6px }
-    button{padding:8px 8px; font-size:13px}
+    button{padding:7px 8px;font-size:13px}
   }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="board-wrap">
-      <div class="board" id="board" aria-hidden="false"></div>
+      <div class="board" id="board" role="grid" aria-label="Monopoly board"></div>
     </div>
 
-    <aside class="panel" aria-label="Game panel">
+    <aside class="panel" aria-label="Game controls">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h3 style="margin:0">Mini Monopoly</h3>
-        <div class="small">Generic • Mobile-ready</div>
+        <div class="small">Classic layout • Smart AI</div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button id="addAI" class="alt">Add AI Player</button>
+        <button id="reset" class="alt">Reset Game</button>
       </div>
 
       <div class="players-list" id="playersList"></div>
@@ -84,40 +87,18 @@
   </div>
 
 <script>
-/* Mini Monopoly - 40 tiles around an 11x11 grid.
-   Generic property names: Property 1..40
-   Simple rules: roll two d6, pass GO +200, buy, pay rent, bankrupt elimination.
+/*
+  Classic-style board (11x11) with 40 edge tiles.
+  - Generic names but includes labels: Income Tax, Chance, Community Chest, Jail, Free Parking, Go To Jail, GO.
+  - AI players: heuristic-based "smart" decisions to buy properties.
+  - Mobile-friendly layout, no zoom.
 */
 
+/* ---------- Board & Tiles ---------- */
 const maxPos = 40;
 const boardEl = document.getElementById('board');
 const logEl = document.getElementById('log');
 
-/* players (2 active by default). Uncomment more for up to 4. */
-const players = [
-  {id:0,name:'Player 1',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-a').trim() || '#ef4444',pos:0,money:1500,alive:true},
-  {id:1,name:'Player 2',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-b').trim() || '#3b82f6',pos:0,money:1500,alive:true},
-  // {id:2,name:'Player 3',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-c').trim() || '#10b981',pos:0,money:1500,alive:true},
-  // {id:3,name:'Player 4',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-d').trim() || '#a78bfa',pos:0,money:1500,alive:true},
-];
-
-let currentTurn = 0;
-let diceValue = 0;
-const bank = {money:999999};
-
-/* create 40 generic tiles */
-const properties = Array.from({length:maxPos}, (_,i)=> {
-  return {
-    id:i,
-    name: i===0 ? 'GO' : `Property ${i}`,
-    price: i===0 ? 0 : 100 + (i*5), // varied prices
-    rent: i===0 ? 0 : Math.max(10, Math.floor((100 + (i*5)) / 6)),
-    owner: null,
-    pos: i
-  };
-});
-
-/* Render 11x11 grid empties */
 function makeGrid(){
   boardEl.innerHTML = '';
   for(let r=0;r<11;r++){
@@ -130,45 +111,114 @@ function makeGrid(){
 }
 makeGrid();
 
-/* build coords mapping for edges (40 positions) */
+/* map 40 positions to edge coords (11x11) */
 function edgeCoords(){
   const coords = [];
-  for(let x=0;x<11;x++) coords.push([0,x]);           // top row 0..10 (11)
-  for(let y=1;y<11;y++) coords.push([y,10]);         // right col 1..10 (10)
-  for(let x=9;x>=0;x--) coords.push([10,x]);         // bottom row 9..0 (10)
-  for(let y=9;y>=1;y--) coords.push([y,0]);          // left col 9..1 (9)
-  // coords length = 40
+  for(let x=0;x<11;x++) coords.push([0,x]);           // top 0..10 (11)
+  for(let y=1;y<11;y++) coords.push([y,10]);         // right 1..10 (10)
+  for(let x=9;x>=0;x--) coords.push([10,x]);         // bottom 9..0 (10)
+  for(let y=9;y>=1;y--) coords.push([y,0]);          // left 9..1 (9)
   return coords;
 }
 const coords = edgeCoords();
 const posToIndex = coords.map(([r,c])=> r*11 + c);
 
-/* render board tiles (text orientation adapted per side) */
+/* classic-ish tile list with special labels (generic properties) */
+const specialMap = {
+  0: {type:'go', name:'GO'},
+  4: {type:'tax', name:'Income Tax', note:'Pay Rp 200'},
+  7: {type:'chance', name:'Chance'},
+  10:{type:'jail', name:'Just Visiting / Jail'},
+  12:{type:'utility', name:'Electric Company'},
+  17:{type:'community', name:'Community Chest'},
+  20:{type:'free', name:'Free Parking'},
+  22:{type:'chance', name:'Chance'},
+  30:{type:'gotojail', name:'Go To Jail'},
+  33:{type:'community', name:'Community Chest'},
+  36:{type:'chance', name:'Chance'}
+};
+
+/* color groups mimic classic sets; index lists (for heuristic) */
+const colorGroups = {
+  brown:[1,3],
+  lightblue:[6,8,9],
+  pink:[11,13,14],
+  orange:[16,18,19],
+  red:[21,23,24],
+  yellow:[26,27,29],
+  green:[31,32,34],
+  blue:[37,38,39]
+};
+
+/* build properties array (generic names) */
+const properties = [];
+for(let i=0;i<maxPos;i++){
+  if(specialMap[i]) {
+    const s = specialMap[i];
+    properties.push({
+      id:i, name:s.name, price: s.type==='go'?0:(s.type==='tax'?200: (s.type==='free'?0: (s.type==='jail'?0:100 + i*6))), rent: s.type==='tax'?0: Math.max(10, Math.floor((100 + i*6)/7)), owner:null, type:s.type
+    });
+  } else {
+    properties.push({
+      id:i, name:`Property ${i}`, price:100 + i*6, rent: Math.max(10, Math.floor((100 + i*6)/7)), owner:null, type:'property'
+    });
+  }
+}
+
+/* helper to find group of position */
+function findGroup(pos){
+  for(const k in colorGroups) if(colorGroups[k].includes(pos)) return k;
+  return null;
+}
+
+/* ---------- Players (human + AI) ---------- */
+let players = [
+  {id:0,name:'You',color:'#ef4444',pos:0,money:1500,alive:true,isAI:false},
+  {id:1,name:'CPU 1',color:'#3b82f6',pos:0,money:1500,alive:true,isAI:true}
+];
+let currentTurn = 0;
+let diceValue = 0;
+const bank = {money:999999};
+
+/* ---------- Rendering ---------- */
 function renderBoard(){
   const cells = boardEl.querySelectorAll('.cell');
-  cells.forEach((cell,i)=> {
-    cell.innerHTML = '';
-    cell.classList.remove('corner');
-    cell.classList.remove('clickable');
-  });
+  cells.forEach(cell=> { cell.innerHTML=''; cell.classList.remove('corner'); cell.classList.remove('clickable'); });
 
-  for(let i=0;i<coords.length && i<maxPos;i++){
+  for(let i=0;i<coords.length;i++){
     const gridIndex = posToIndex[i];
     const el = boardEl.children[gridIndex];
     el.innerHTML = '';
-    el.classList.add(i%10===0 ? 'corner' : '');
-    // title (rotate orientation based on side)
-    const side = determineSide(i); // 'top','right','bottom','left'
+    if(i%10===0) el.classList.add('corner');
+
+    // Determine side for text orientation
+    const side = determineSide(i);
     const title = document.createElement('div');
     title.className = (side==='top' || side==='bottom') ? 'edge-horizontal edge-title' : 'edge-vertical edge-title';
+    // Add color bar if in a color group
+    const group = findGroup(i);
+    if(group){
+      const bar = document.createElement('div');
+      bar.className='prop-bar';
+      let color = '#334155';
+      switch(group){
+        case 'brown': color=getComputedStyle(document.documentElement).getPropertyValue('--c-brown'); break;
+        case 'lightblue': color=getComputedStyle(document.documentElement).getPropertyValue('--c-lightblue'); break;
+        case 'pink': color=getComputedStyle(document.documentElement).getPropertyValue('--c-pink'); break;
+        case 'orange': color=getComputedStyle(document.documentElement).getPropertyValue('--c-orange'); break;
+        case 'red': color=getComputedStyle(document.documentElement).getPropertyValue('--c-red'); break;
+        case 'yellow': color=getComputedStyle(document.documentElement).getPropertyValue('--c-yellow'); break;
+        case 'green': color=getComputedStyle(document.documentElement).getPropertyValue('--c-green'); break;
+        case 'blue': color=getComputedStyle(document.documentElement).getPropertyValue('--c-blue'); break;
+      }
+      bar.style.background = color;
+      el.appendChild(bar);
+    }
+
     title.textContent = properties[i].name;
     el.appendChild(title);
 
     if(properties[i].price>0){
-      const bar = document.createElement('div');
-      bar.className='prop-bar';
-      bar.style.background = '#334155';
-      el.appendChild(bar);
       const price = document.createElement('div');
       price.className='price';
       price.textContent = 'Rp ' + properties[i].price;
@@ -176,7 +226,7 @@ function renderBoard(){
     } else {
       const info = document.createElement('div');
       info.className='small';
-      info.textContent = 'Collect Rp 200 on pass';
+      info.textContent = properties[i].type==='tax' ? 'Pay tax' : properties[i].type==='go' ? 'Collect on pass' : properties[i].type;
       el.appendChild(info);
     }
 
@@ -192,35 +242,13 @@ function renderBoard(){
   updatePlayersOnBoard();
 }
 
-/* simple side determination */
 function determineSide(pos){
-  // top: 0..10
   if(pos>=0 && pos<=10) return 'top';
   if(pos>10 && pos<=20) return 'right';
   if(pos>20 && pos<=30) return 'bottom';
   return 'left';
 }
 
-/* render players sidebar */
-const playersListEl = document.getElementById('playersList');
-function renderPlayersList(){
-  playersListEl.innerHTML='';
-  players.forEach(p=>{
-    const d = document.createElement('div');
-    d.className = 'player' + (currentTurn===p.id ? ' active' : '');
-    d.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${p.color};border:2px solid #071226"></div>
-                   <div style="flex:1">
-                     <div style="font-weight:700;font-size:14px">${p.name}</div>
-                     <div class="small">Rp ${p.money}</div>
-                   </div>
-                   <div class="small">Pos: ${p.pos}</div>`;
-    playersListEl.appendChild(d);
-  });
-  document.getElementById('turn').textContent = players[currentTurn] ? players[currentTurn].name : '-';
-  document.getElementById('bank').textContent = 'Rp ' + bank.money;
-}
-
-/* players on board visuals */
 function updatePlayersOnBoard(){
   const playersOnEls = boardEl.querySelectorAll('.players-on');
   playersOnEls.forEach(el=> el.innerHTML='');
@@ -241,17 +269,35 @@ function updatePlayersOnBoard(){
   });
 }
 
-/* show tile info */
+/* ---------- Sidebar / Players list ---------- */
+const playersListEl = document.getElementById('playersList');
+function renderPlayersList(){
+  playersListEl.innerHTML='';
+  players.forEach(p=>{
+    const d = document.createElement('div');
+    d.className = 'player' + (currentTurn===p.id ? ' active' : '');
+    d.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${p.color};border:2px solid #071226"></div>
+                   <div style="flex:1">
+                     <div style="font-weight:700">${p.name}${p.isAI? ' (CPU)':''}</div>
+                     <div class="small">Rp ${p.money}</div>
+                   </div>
+                   <div class="small">Pos: ${p.pos}</div>`;
+    playersListEl.appendChild(d);
+  });
+  document.getElementById('turn').textContent = players[currentTurn] ? players[currentTurn].name : '-';
+  document.getElementById('bank').textContent = 'Rp ' + bank.money;
+}
+
+/* ---------- Tile info & log ---------- */
 function showProp(i){
   const prop = properties[i];
   const el = document.getElementById('propInfo');
   el.innerHTML = `<div style="font-weight:700">${prop.name}</div>
                   <div class="small">Price: Rp ${prop.price} • Rent: Rp ${prop.rent}</div>
                   <div style="margin-top:6px">${prop.owner===null ? 'Unowned' : 'Owned by ' + (players.find(p=>p.id===prop.owner)?.name || 'Unknown')}</div>
-                  <div style="margin-top:6px" class="small">Index: ${i}</div>`;
+                  <div style="margin-top:6px" class="small">Type: ${prop.type}</div>`;
 }
 
-/* logging helper */
 function log(text){
   const p = document.createElement('div');
   p.textContent = text;
@@ -259,7 +305,7 @@ function log(text){
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-/* actions */
+/* ---------- Game actions ---------- */
 function rollDice(){
   const p = players[currentTurn];
   if(!p || !p.alive) return;
@@ -274,14 +320,36 @@ function movePlayer(pid, steps){
   const p = players[pid];
   const prev = p.pos;
   p.pos = (p.pos + steps) % maxPos;
-  // passed GO detection
-  if(prev + steps >= maxPos || p.pos < prev) { p.money += 200; log(`${p.name} passed GO and collected Rp 200`); }
+
+  // pass GO
+  if(prev + steps >= maxPos || p.pos < prev){
+    p.money += 200;
+    log(`${p.name} passed GO and collected Rp 200`);
+  }
+
   updatePlayersOnBoard();
   const landed = properties[p.pos];
-  if(landed.price === 0){
+  // handle special tiles
+  if(landed.type === 'tax'){
+    p.money -= 200;
+    log(`${p.name} landed on Income Tax and paid Rp 200`);
+    checkBankrupt(p);
+  } else if(landed.type === 'chance' || landed.type === 'community'){
+    // simple random effect
+    const rng = Math.random();
+    if(rng < 0.5){ p.money += 100; log(`${p.name} found money (+Rp100) from ${landed.name}`); }
+    else { p.money -= 100; log(`${p.name} lost Rp100 from ${landed.name}`); checkBankrupt(p); }
+  } else if(landed.type === 'gotojail'){
+    p.pos = 10; // send to jail
+    log(`${p.name} was sent to Jail`);
+  } else if(landed.price === 0){
     log(`${p.name} landed on ${landed.name}.`);
   } else if(landed.owner === null){
     log(`${p.name} landed on ${landed.name} — available for Rp ${landed.price}.`);
+    // if AI, make decision automatically
+    if(p.isAI){
+      setTimeout(()=> { aiBuyDecision(p.id, landed.id); }, 600);
+    }
   } else if(landed.owner === p.id){
     log(`${p.name} landed on their own ${landed.name}.`);
   } else {
@@ -295,12 +363,12 @@ function movePlayer(pid, steps){
   renderPlayersList();
 }
 
-/* buy current tile */
+/* buy current tile by active player */
 function buyCurrent(){
   const p = players[currentTurn];
   if(!p || !p.alive) return;
   const prop = properties[p.pos];
-  if(prop.price===0){ log('Cannot buy GO.'); return; }
+  if(prop.price===0){ log('Cannot buy this tile.'); return; }
   if(prop.owner !== null){ log('Property already owned.'); return; }
   if(p.money >= prop.price){
     p.money -= prop.price;
@@ -313,7 +381,7 @@ function buyCurrent(){
   }
 }
 
-/* end turn: next alive player */
+/* end turn -> next alive player; if next is AI, auto-run its turn */
 function endTurn(){
   const total = players.length;
   let next = currentTurn;
@@ -324,12 +392,17 @@ function endTurn(){
   currentTurn = next;
   renderPlayersList();
   log(`Turn: ${players[currentTurn].name}`);
+  // if AI, trigger its actions after short delay to feel natural
+  if(players[currentTurn].isAI){
+    setTimeout(()=> runAIMove(players[currentTurn].id), 800);
+  }
 }
 
-/* bankruptcy */
+/* bankruptcy check */
 function checkBankrupt(player){
   if(player.money < 0){
     player.alive = false;
+    // release properties
     properties.forEach(prop => { if(prop.owner === player.id) prop.owner = null; });
     log(`${player.name} went bankrupt and is eliminated.`);
     const alive = players.filter(p=>p.alive);
@@ -344,15 +417,108 @@ function checkBankrupt(player){
   }
 }
 
-/* ui hooks */
-document.getElementById('rollBtn').addEventListener('click', ()=> rollDice());
-document.getElementById('buyBtn').addEventListener('click', ()=> buyCurrent());
-document.getElementById('endBtn').addEventListener('click', ()=> endTurn());
+/* ---------- AI logic (heuristic "smart" buyer) ---------- */
+/* Ai decision: buys if...
+   - Buying leaves it with at least 200 cash AND
+     - price is cheap (< 180), OR
+     - buying completes its color set (strong), OR
+     - expected rent/growth threshold satisfied (rent * factor > price * small)
+*/
+function aiBuyDecision(aiId, propId){
+  const ai = players.find(p=>p.id===aiId);
+  const prop = properties[propId];
+  if(!ai || !prop || prop.owner !== null) return;
 
-/* init */
+  const price = prop.price;
+  const rent = prop.rent;
+  const group = findGroup(propId);
+
+  // count owned in same group by this AI
+  let ownInGroup = 0, totalInGroup = 0;
+  if(group){
+    totalInGroup = colorGroups[group].length;
+    colorGroups[group].forEach(pid => { if(properties[pid].owner === aiId) ownInGroup++; });
+  }
+
+  const willHave = ai.money - price;
+  let decision = false;
+
+  if(willHave < 100) decision = false;            // don't go too broke
+  else if(group && ownInGroup + 1 === totalInGroup) decision = true; // complete set
+  else if(price <= 180) decision = true;          // cheap buy
+  else if(rent * 8 > price) decision = true;      // rent yield heuristic
+  else decision = false;
+
+  if(decision){
+    ai.money -= price;
+    prop.owner = ai.id;
+    log(`${ai.name} (AI) bought ${prop.name} for Rp ${price}`);
+  } else {
+    log(`${ai.name} (AI) decided NOT to buy ${prop.name}`);
+  }
+  renderPlayersList();
+}
+
+/* run entire AI turn: roll -> possible buy -> end */
+function runAIMove(aiId){
+  const idx = players.findIndex(p=>p.id===aiId);
+  if(idx === -1) return;
+  currentTurn = idx;
+  renderPlayersList();
+  // roll
+  setTimeout(()=> {
+    rollDice();
+    // after move, if landed on unowned property, aiBuyDecision will be called from movePlayer
+    // end turn after short wait
+    setTimeout(()=> { endTurn(); }, 1200);
+  }, 400);
+}
+
+/* ---------- Controls ---------- */
+document.getElementById('rollBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  rollDice();
+});
+document.getElementById('buyBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  buyCurrent();
+});
+document.getElementById('endBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  endTurn();
+});
+
+/* add AI player button */
+document.getElementById('addAI').addEventListener('click', ()=>{
+  const newId = players.length ? Math.max(...players.map(p=>p.id)) + 1 : 0;
+  const colors = ['#a78bfa','#10b981','#f97316','#06b6d4'];
+  players.push({id:newId,name:`CPU ${newId}`,color:colors[newId%colors.length]||'#999999',pos:0,money:1500,alive:true,isAI:true});
+  log(`Added CPU ${newId}`);
+  renderPlayersList();
+});
+
+/* reset game */
+document.getElementById('reset').addEventListener('click', ()=>{
+  // reset props and players
+  properties.forEach(p=> { p.owner = null; });
+  players = [
+    {id:0,name:'You',color:'#ef4444',pos:0,money:1500,alive:true,isAI:false},
+    {id:1,name:'CPU 1',color:'#3b82f6',pos:0,money:1500,alive:true,isAI:true}
+  ];
+  currentTurn = 0;
+  diceValue = 0;
+  document.getElementById('dice').textContent = '-';
+  document.getElementById('propInfo').textContent = 'Tap a tile or land on it to view details.';
+  logEl.innerHTML = '';
+  log('Game reset.');
+  renderBoard();
+  renderPlayersList();
+});
+
+/* ---------- Init ---------- */
 renderBoard();
 renderPlayersList();
-log('Game ready — tap Roll Dice to play.');
+log('Ready. Click Roll Dice (or add AI). CPU players act automatically with heuristics.');
 showProp(0);
 </script>
 </body>

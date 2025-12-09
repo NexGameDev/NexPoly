@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Monopoly Mini — Simple</title>
+<style>
+  :root{
+    --bg:#071226; --card:#f8fafc; --muted:#9aa6b2; --accent:#f59e0b;
+    --owner-a:#ef4444; --owner-b:#3b82f6; --owner-c:#10b981; --owner-d:#a78bfa;
+    --board-max:900px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:linear-gradient(#071226,#051423); color:#eaf2ff}
+  .wrap{max-width:var(--board-max); margin:18px auto; padding:12px; display:grid; grid-template-columns: 1fr 320px; gap:14px;}
+  @media (max-width:920px){ .wrap{grid-template-columns:1fr; padding:10px} }
+
+  /* BOARD: fixed layout (no zooming). Keep cells readable on mobile by using percentage sizes */
+  .board{width:100%; background:linear-gradient(180deg,#0b1724,#071226); border-radius:10px; padding:10px; display:grid; grid-template-columns:repeat(11,1fr); grid-template-rows:repeat(11,1fr); gap:6px}
+  .cell{background:linear-gradient(180deg,#082033,#071226); border-radius:6px; padding:6px; font-size:12px; display:flex; flex-direction:column; justify-content:space-between; color:#dbeafe}
+  .corner{background:linear-gradient(180deg,#0f2638,#071226); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center}
+  .prop-bar{height:10px; border-radius:4px; margin-bottom:6px; width:100%}
+  .title{font-weight:700; font-size:11px; margin-bottom:3px}
+  .price{font-size:11px; color:var(--muted)}
+  .players-on{display:flex; gap:4px; margin-top:6px}
+  .pawn{width:16px;height:16px;border-radius:50%;display:inline-block;border:2px solid #071226}
+
+  /* Sidebar */
+  .panel{background:linear-gradient(180deg,#061425,#041226); border-radius:10px; padding:12px; min-height:calc(100% - 24px)}
+  .players-list{display:flex; flex-direction:column; gap:8px; margin-bottom:10px}
+  .player{display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; background:rgba(255,255,255,0.02)}
+  .player.active{outline:2px solid rgba(255,255,255,0.04)}
+  .controls{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap}
+  button{background:var(--accent); border:none; color:#071226; font-weight:700; padding:8px 10px; border-radius:8px; cursor:pointer}
+  button.alt{background:transparent; color:var(--card); border:1px solid rgba(255,255,255,0.06)}
+  .log{background:rgba(255,255,255,0.02); padding:8px; height:170px; overflow:auto; border-radius:8px; font-size:13px; color:#cbe7ff}
+  .prop-list{margin-top:8px; font-size:13px; color:var(--muted)}
+
+  /* small helpers */
+  .small{font-size:13px; color:var(--muted)}
+  .center{display:flex; align-items:center; justify-content:center}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Board -->
+    <div>
+      <div class="board" id="board" aria-hidden="false"></div>
+    </div>
+
+    <!-- Sidebar / controls -->
+    <aside class="panel" aria-label="Control panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="margin:0">Monopoly Mini</h3>
+        <div class="small">Simple • Mobile-friendly</div>
+      </div>
+
+      <div class="players-list" id="playersList"></div>
+
+      <div class="controls">
+        <button id="rollBtn">Roll Dice</button>
+        <button id="buyBtn" class="alt">Buy</button>
+        <button id="endBtn" class="alt">End Turn</button>
+      </div>
+
+      <div class="small">Dice: <strong id="dice">-</strong></div>
+      <div class="small">Turn: <strong id="turn">-</strong></div>
+      <div class="small" style="margin-bottom:8px">Bank: <strong id="bank">Rp 0</strong></div>
+
+      <div style="margin-top:10px; font-weight:700">Property / Actions</div>
+      <div id="propInfo" class="prop-list">Click or land on a tile to see info.</div>
+
+      <div style="margin-top:10px; font-weight:700">Log</div>
+      <div class="log" id="log"></div>
+    </aside>
+  </div>
+
+<script>
+/*
+  Monopoly Mini - Single-file (English UI)
+  Simple:
+  - up to 4 players
+  - 20 playable tiles around the board
+  - buy property, pay rent, turns, elimination if money < 0
+  - no houses/hotels, no trading, fast play
+*/
+
+/* --- Game data --- */
+const players = [
+  {id:0,name:'Player 1',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-a').trim() || '#ef4444',pos:0,money:1500,alive:true},
+  {id:1,name:'Player 2',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-b').trim() || '#3b82f6',pos:0,money:1500,alive:true},
+  // uncomment to enable up to 4 players:
+  // {id:2,name:'Player 3',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-c').trim() || '#10b981',pos:0,money:1500,alive:true},
+  // {id:3,name:'Player 4',color:getComputedStyle(document.documentElement).getPropertyValue('--owner-d').trim() || '#a78bfa',pos:0,money:1500,alive:true},
+];
+
+let currentTurn = 0;
+let diceValue = 0;
+let boardCells = [];
+const logEl = document.getElementById('log');
+const maxPos = 20;
+const bank = {money: 999999};
+
+const properties = [];
+for(let i=0;i<maxPos;i++){
+  properties.push({
+    id:i,
+    name: i===0 ? 'Start' : (i%5===0 ? 'Station '+(i/5) : 'Prop '+i),
+    price: i===0 ? 0 : 100 + (i*10),
+    rent: i===0 ? 0 : Math.max(10, Math.floor((100 + i*10) / 5)),
+    owner: null,
+    pos: i
+  });
+}
+
+/* --- Render board (11x11 visual grid) --- */
+const boardContainer = document.getElementById('board');
+function makeEmptyGrid(){
+  boardContainer.innerHTML='';
+  for(let r=0;r<11;r++){
+    for(let c=0;c<11;c++){
+      const div = document.createElement('div');
+      div.className='cell';
+      boardContainer.appendChild(div);
+    }
+  }
+}
+makeEmptyGrid();
+
+function renderBoard(){
+  const cells = boardContainer.querySelectorAll('.cell');
+  const coords = [];
+  for(let x=0;x<11;x++) coords.push([0,x]);
+  for(let y=1;y<11;y++) coords.push([y,10]);
+  for(let x=9;x>=0;x--) coords.push([10,x]);
+  for(let y=9;y>=1;y--) coords.push([y,0]);
+  const posToIndex = coords.map(([r,c])=> r*11 + c);
+
+  cells.forEach((cell,i)=> {
+    cell.innerHTML='';
+    cell.classList.remove('corner');
+  });
+
+  for(let i=0;i<coords.length && i<maxPos;i++){
+    const gridIndex = posToIndex[i];
+    const el = cells[gridIndex];
+    el.innerHTML = '';
+    if(i===0) el.classList.add('corner');
+    const title = document.createElement('div');
+    title.className='title';
+    title.textContent = properties[i].name;
+    el.appendChild(title);
+
+    if(properties[i].price>0){
+      const bar = document.createElement('div');
+      bar.className='prop-bar';
+      bar.style.background = '#334155';
+      el.appendChild(bar);
+      const price = document.createElement('div');
+      price.className='price';
+      price.textContent = 'Rp ' + properties[i].price;
+      el.appendChild(price);
+    } else {
+      const info = document.createElement('div');
+      info.className='small';
+      info.textContent = 'Collect Rp 200 when passing';
+      el.appendChild(info);
+    }
+
+    const playersHere = document.createElement('div');
+    playersHere.className='players-on';
+    playersHere.dataset.pos = i;
+    el.appendChild(playersHere);
+
+    el.addEventListener('click', ()=> showProp(i));
+  }
+
+  boardCells = cells;
+  updatePlayersOnBoard();
+}
+
+/* --- Player sidebar --- */
+const playersListEl = document.getElementById('playersList');
+function renderPlayersList(){
+  playersListEl.innerHTML='';
+  players.forEach(p=>{
+    const d = document.createElement('div');
+    d.className = 'player' + (currentTurn===p.id ? ' active':'');
+    d.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${p.color};border:2px solid #071226"></div>
+                   <div style="flex:1">
+                     <div style="font-weight:700;font-size:14px">${p.name}</div>
+                     <div class="small">Rp ${p.money}</div>
+                   </div>
+                   <div class="small">Pos: ${p.pos}</div>`;
+    playersListEl.appendChild(d);
+  });
+  document.getElementById('turn').textContent = players[currentTurn] ? players[currentTurn].name : '-';
+  document.getElementById('bank').textContent = 'Rp ' + bank.money;
+}
+
+function updatePlayersOnBoard(){
+  const playersOnEls = boardContainer.querySelectorAll('.players-on');
+  playersOnEls.forEach(el=> el.innerHTML='');
+  const coords = [];
+  for(let x=0;x<11;x++) coords.push([0,x]);
+  for(let y=1;y<11;y++) coords.push([y,10]);
+  for(let x=9;x>=0;x--) coords.push([10,x]);
+  for(let y=9;y>=1;y--) coords.push([y,0]);
+  const posToIndex = coords.map(([r,c])=> r*11 + c);
+  players.forEach(p=>{
+    if(!p.alive) return;
+    const pos = p.pos % maxPos;
+    const gridIndex = posToIndex[pos];
+    const cell = boardContainer.children[gridIndex];
+    if(!cell) return;
+    const playersOn = cell.querySelector('.players-on');
+    if(playersOn){
+      const pawn = document.createElement('span');
+      pawn.className='pawn';
+      pawn.style.background = p.color;
+      pawn.title = p.name;
+      playersOn.appendChild(pawn);
+    }
+  });
+}
+
+/* --- Property info --- */
+function showProp(i){
+  const prop = properties[i];
+  const el = document.getElementById('propInfo');
+  el.innerHTML = `<div style="font-weight:700">${prop.name}</div>
+                  <div class="small">Price: Rp ${prop.price} • Rent: Rp ${prop.rent}</div>
+                  <div style="margin-top:6px">${prop.owner===null ? 'Unowned' : 'Owned by ' + players.find(p=>p.id===prop.owner)?.name}</div>`;
+}
+
+/* --- Logging --- */
+function log(text){
+  const p = document.createElement('div');
+  p.textContent = text;
+  logEl.appendChild(p);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* --- Actions --- */
+function rollDice(){
+  const p = players[currentTurn];
+  if(!p || !p.alive) return;
+  diceValue = Math.floor(Math.random()*6) + 1 + Math.floor(Math.random()*6) + 1; // two d6
+  document.getElementById('dice').textContent = diceValue;
+  log(`${p.name} rolled: ${diceValue}`);
+  movePlayer(currentTurn, diceValue);
+  renderPlayersList();
+}
+
+function movePlayer(pid, steps){
+  const p = players[pid];
+  p.pos = (p.pos + steps) % maxPos;
+  updatePlayersOnBoard();
+  const landed = properties[p.pos];
+  const prev = (p.pos - steps + maxPos) % maxPos;
+  if(prev > p.pos) { p.money += 200; log(`${p.name} passed Start and collected Rp 200`); }
+
+  if(landed.price === 0){
+    log(`${p.name} landed on ${landed.name} (Start).`);
+  } else if(landed.owner === null){
+    log(`${p.name} landed on ${landed.name} — available. Price Rp ${landed.price}.`);
+  } else if(landed.owner === p.id){
+    log(`${p.name} landed on their own property (${landed.name}).`);
+  } else {
+    const owner = players.find(pl => pl.id === landed.owner);
+    const rent = landed.rent;
+    p.money -= rent;
+    owner.money += rent;
+    log(`${p.name} paid rent Rp ${rent} to ${owner.name} (${landed.name}).`);
+    checkBankrupt(p);
+  }
+  renderPlayersList();
+}
+
+function buyCurrent(){
+  const p = players[currentTurn];
+  if(!p || !p.alive) return;
+  const prop = properties[p.pos];
+  if(prop.price===0){ log('Cannot buy Start.'); return; }
+  if(prop.owner !== null){ log('Property already owned.'); return; }
+  if(p.money >= prop.price){
+    p.money -= prop.price;
+    prop.owner = p.id;
+    log(`${p.name} bought ${prop.name} for Rp ${prop.price}.`);
+    renderPlayersList();
+    showProp(p.pos);
+  } else {
+    log(`${p.name} does not have enough money to buy ${prop.name}.`);
+  }
+}
+
+function endTurn(){
+  let next = currentTurn;
+  const total = players.length;
+  for(let i=1;i<=total;i++){
+    const cand = (currentTurn + i) % total;
+    if(players[cand].alive){
+      next = cand; break;
+    }
+  }
+  currentTurn = next;
+  renderPlayersList();
+  log(`Turn: ${players[currentTurn].name}`);
+}
+
+function checkBankrupt(player){
+  if(player.money < 0){
+    player.alive = false;
+    properties.forEach(prop => { if(prop.owner === player.id) prop.owner = null; });
+    log(`${player.name} went bankrupt and is eliminated.`);
+    const alive = players.filter(p=>p.alive);
+    if(alive.length === 1){
+      log(`🏆 ${alive[0].name} wins the game!`);
+      document.getElementById('rollBtn').disabled = true;
+      document.getElementById('buyBtn').disabled = true;
+      document.getElementById('endBtn').disabled = true;
+    } else {
+      if(!players[currentTurn].alive) endTurn();
+    }
+  }
+}
+
+/* --- UI hooks --- */
+document.getElementById('rollBtn').addEventListener('click', ()=> rollDice());
+document.getElementById('buyBtn').addEventListener('click', ()=> buyCurrent());
+document.getElementById('endBtn').addEventListener('click', ()=> endTurn());
+
+/* init */
+renderBoard();
+renderPlayersList();
+log('Game ready. Click "Roll Dice" to start.');
+showProp(0);
+</script>
+</body>
+</html>

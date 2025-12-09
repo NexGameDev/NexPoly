@@ -3,119 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Classic-style Mini Monopoly (Full board)</title>
+<title>Classic Mini Monopoly — 600x600 Cream Board</title>
 <style>
   :root{
-    --bg:#071223;
-    --panel:#03121a;
-    --muted:#a8b6c4;
+    --board-size:600px;     /* actual board size (1:1 requested) */
+    --bg-krem:#f4ecd8;      /* cream paper color */
+    --line:#1f1f1f;         /* thin border color */
+    --muted:#6b7280;
     --accent:#f59e0b;
-    --board-max:980px;
-    --cell-min:44px;
-    /* classic-like colors */
-    --brown:#8b5a2b;
-    --lightblue:#3aa0ff;
-    --pink:#d06aa7;
-    --orange:#f28c2b;
-    --red:#e03b3b;
-    --yellow:#f5d23b;
-    --green:#2bb673;
-    --blue:#1f4fb4;
+    --pawn-border:#0b1220;
+    /* property colors */
+    --brown:#8b5a2b; --lightblue:#3aa0ff; --pink:#d06aa7; --orange:#f28c2b;
+    --red:#e03b3b; --yellow:#f5d23b; --green:#2bb673; --blue:#1f4fb4;
+    --cell-gap:4px;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:linear-gradient(#071223,#03121a);color:#e6f3ff;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  .wrap{max-width:var(--board-max);margin:12px auto;padding:10px;display:grid;grid-template-columns:1fr 360px;gap:12px}
-  @media (max-width:980px){ .wrap{grid-template-columns:1fr} }
-  .board-wrap{width:100%;overflow:auto;border-radius:10px}
-  /* board is square, uses 11x11 grid. center 9x9 kept empty */
-  .board{width:100%;aspect-ratio:1/1;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);gap:6px;padding:8px;background:linear-gradient(180deg,#0b1724,#071226);border-radius:10px}
-  .cell{background:linear-gradient(180deg,#082033,#071226);border-radius:6px;padding:6px;display:flex;flex-direction:column;justify-content:space-between;color:#e6f3ff;min-width:var(--cell-min);min-height:var(--cell-min);font-size:12px}
-  .corner{background:linear-gradient(180deg,#102b3b,#071726);font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:6px}
-  .edge-title{font-weight:700;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .edge-vertical{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center}
-  .edge-horizontal{text-align:center}
-  .prop-bar{height:10px;border-radius:4px;margin-bottom:6px;width:100%}
-  .price{font-size:11px;color:var(--muted)}
-  .players-on{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
-  .pawn{width:16px;height:16px;border-radius:50%;display:inline-block;border:2px solid #071726}
-  .cell.clickable{cursor:pointer}
-  /* center area (9x9) blank visually */
-  .center-blank{grid-column:2 / span 9; grid-row:2 / span 9; background:transparent; box-shadow:none; border-radius:6px; pointer-events:none}
-
-  /* sidebar */
-  .panel{background:linear-gradient(180deg,var(--panel),#02101a);border-radius:10px;padding:12px}
-  .players-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-  .player{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02)}
-  .player.active{outline:2px solid rgba(255,255,255,0.04)}
-  .controls{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-  button{background:var(--accent);border:none;color:#071726;font-weight:700;padding:8px 10px;border-radius:8px;cursor:pointer}
-  button.alt{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04)}
-  .log{background:rgba(255,255,255,0.02);padding:8px;height:240px;overflow:auto;border-radius:8px;font-size:13px;color:#cbe7ff}
-  .small{font-size:13px;color:var(--muted)}
-  .prop-list{margin-top:8px;font-size:13px;color:var(--muted)}
-
-  /* small screens tweaks */
-  @media (max-width:420px){
-    .pawn{width:14px;height:14px}
-    button{padding:7px 8px;font-size:13px}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(#071223,#03121a);color:#071726;display:flex;align-items:center;justify-content:center;padding:18px}
+  .page{width:100%;max-width:980px}
+  .board-area{display:flex;flex-direction:column;align-items:center;gap:12px}
+  /* Board container: fixed 600x600 but scales down on small screens via max-width */
+  .board-wrap{width:var(--board-size);height:var(--board-size);background:var(--bg-krem);border:2px solid var(--line);box-shadow:0 8px 24px rgba(2,6,23,0.6);border-radius:8px;overflow:hidden;position:relative}
+  @media (max-width:640px){
+    .board-wrap{width:calc(100vw - 32px);height:calc(100vw - 32px)} /* scale to fit small screens */
   }
+
+  /* 11x11 grid. center 9x9 is kept visually empty by overlay */
+  .board{width:100%;height:100%;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);gap:var(--cell-gap);padding:8px;background:transparent}
+  .cell{background:transparent;border:1px solid transparent;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px;font-size:11px;min-width:0;min-height:0;overflow:hidden}
+  /* tile panel content box (white-ish) */
+  .tile{background:#fff;border:1px solid var(--line);width:100%;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:4px;border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,0.03)}
+  .corner .tile{display:flex;align-items:center;justify-content:center;font-weight:700}
+  .title{font-weight:700;font-size:12px;line-height:1;text-align:center;word-break:keep-all}
+  .title.small{font-size:10px}
+  .bar{height:10px;border-radius:3px;width:100%;margin-bottom:4px}
+  .price{font-size:11px;color:var(--muted);text-align:center}
+  .players-on{display:flex;gap:4px;justify-content:center;padding-top:6px;flex-wrap:wrap}
+  .pawn{width:14px;height:14px;border-radius:50%;border:2px solid var(--pawn-border);box-shadow:0 1px 0 rgba(0,0,0,0.05)}
+
+  /* center blank overlay (covers inner 9x9 visually) */
+  .center-blank{position:absolute;left:8px + (1 * ((var(--board-size) - 16px - (10 * var(--cell-gap))) / 11));top:8px + (1 * ((var(--board-size) - 16px - (10 * var(--cell-gap))) / 11)); /* fallback; will reposition via JS */pointer-events:none}
+
+  /* bottom UI (under board) */
+  .ui{width:100%;margin-top:6px;background:transparent;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  button{background:var(--accent);border:none;color:#071726;padding:10px 12px;border-radius:8px;font-weight:700;cursor:pointer}
+  button.alt{background:#fff;border:1px solid var(--line;color:#071726);color:#071726}
+  .info-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .chip{background:#fff;border:1px solid var(--line);padding:8px 10px;border-radius:8px;font-weight:700;color:#071726;min-width:90px;text-align:center}
+  .log{width:100%;max-width:var(--board-size);background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;height:160px;overflow:auto;font-size:13px;color:#071726}
+  @media (max-width:640px){ .log{max-width:calc(100vw - 32px)} }
+
+  /* small helpers to ensure single-line labels */
+  .title.one-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="board-wrap" role="region" aria-label="Monopoly board">
-      <div class="board" id="board"></div>
+  <div class="page">
+    <div class="board-area">
+      <div class="board-wrap" id="boardWrap" aria-label="Monopoly board (600x600)">
+        <div class="board" id="board"></div>
+      </div>
+
+      <!-- UI below the board -->
+      <div class="ui">
+        <div class="controls">
+          <button id="rollBtn">Roll Dice</button>
+          <button id="buyBtn">Buy</button>
+          <button id="endBtn">End Turn</button>
+          <button id="addAI" class="alt">Add CPU</button>
+          <button id="reset" class="alt">Reset</button>
+        </div>
+
+        <div class="info-row">
+          <div class="chip">Money: <span id="money">Rp 1500</span></div>
+          <div class="chip">Turn: <span id="turn">-</span></div>
+          <div class="chip">Dice: <span id="dice">-</span></div>
+          <div class="chip">Tile: <span id="tileInfo">-</span></div>
+        </div>
+
+        <div class="log" id="log" aria-live="polite"></div>
+      </div>
     </div>
-
-    <aside class="panel" aria-label="Game controls">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <h3 style="margin:0">Classic Mini Monopoly</h3>
-        <div class="small">Full board • Mobile</div>
-      </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button id="addAI" class="alt">Add CPU</button>
-        <button id="reset" class="alt">Reset</button>
-      </div>
-
-      <div class="players-list" id="playersList"></div>
-
-      <div class="controls">
-        <button id="rollBtn">Roll Dice</button>
-        <button id="buyBtn" class="alt">Buy</button>
-        <button id="endBtn" class="alt">End Turn</button>
-      </div>
-
-      <div class="small">Dice: <strong id="dice">-</strong></div>
-      <div class="small">Turn: <strong id="turn">-</strong></div>
-      <div class="small" style="margin-bottom:8px">Bank: <strong id="bank">Rp 0</strong></div>
-
-      <div style="margin-top:8px;font-weight:700">Tile Info</div>
-      <div id="propInfo" class="prop-list">Tap a tile or land on it to view details.</div>
-
-      <div style="margin-top:10px;font-weight:700">Log</div>
-      <div class="log" id="log"></div>
-    </aside>
   </div>
 
 <script>
-/* Full classic-like board render + abbreviations + simple AI
-   - 11x11 visual grid, 40 tiles around edges
-   - center 9x9 left empty (visual)
-   - auto-abbreviate long labels using mapping or trimming
+/* Full 11x11 board, 40 tiles on edges (10 per side), cream paper look, center left blank.
+   - Board visual is 11 cols x 11 rows
+   - Mapping positions 0..39 to edge coords
+   - Labels abbreviated per your choice: Prop, Chance, Tax, Rail, Community, Jail, GoToJail, FreePark, GO
+   - UI under board (money, turn, dice, log)
+   - AI: CPU players make simple heuristic buy decisions
 */
 
-/* ---------- Data ---------- */
-const boardEl = document.getElementById('board');
-const logEl = document.getElementById('log');
-const maxPos = 40;
+/* ---------- Helpers & Config ---------- */
+const BOARD_SIZE = 600;           // desired board pixel size (will scale on small screens)
+const BOARD_ID = 'board';
+const MAX_POS = 40;
+const abbrevMap = {
+  'Property':'Prop',
+  'Income Tax':'Tax',
+  'Luxury Tax':'Tax',
+  'Community Chest':'Community',
+  'Chance':'Chance',
+  'Electric Company':'Rail', // simplified naming (we'll use Rail for rail/utility)
+  'Free Parking':'FreePark',
+  'Go To Jail':'GoToJail',
+  'Just Visiting / Jail':'Jail',
+  'Jail (Just Visiting)':'Jail',
+  'Railroad':'Rail',
+  'GO':'GO'
+};
 
-/* mapping of special tiles (classic labels, generic ownership/prices) */
+/* tiles that are special */
 const specialMap = {
   0:{type:'go', name:'GO'},
-  4:{type:'tax', name:'Income Tax', note:'Pay Rp 200'},
+  4:{type:'tax', name:'Income Tax'},
   7:{type:'chance', name:'Chance'},
-  10:{type:'jail', name:'Jail (Just Visiting)'},
+  10:{type:'jail', name:'Jail'},
   12:{type:'utility', name:'Electric Company'},
   17:{type:'community', name:'Community Chest'},
   20:{type:'free', name:'Free Parking'},
@@ -125,7 +129,7 @@ const specialMap = {
   36:{type:'chance', name:'Chance'}
 };
 
-/* color groups (positions chosen to mimic classic distribution) */
+/* color groups (roughly matching classic distribution) */
 const colorGroups = {
   brown:[1,3],
   lightblue:[6,8,9],
@@ -137,16 +141,16 @@ const colorGroups = {
   blue:[37,38,39]
 };
 
-/* prepare properties array (generic names: Property N) */
+/* build properties array */
 const properties = [];
-for(let i=0;i<maxPos;i++){
+for(let i=0;i<MAX_POS;i++){
   if(specialMap[i]){
     const s = specialMap[i];
     properties.push({
       id:i,
       name:s.name,
-      price: s.type==='go' || s.type==='free' || s.type==='jail' ? 0 : (s.type==='tax'?200: 100 + i*6),
-      rent: s.type==='tax'?0: Math.max(10, Math.floor((100 + i*6)/7)),
+      price: s.type==='go' || s.type==='free' || s.type==='jail' ? 0 : (s.type==='tax'?200: 100 + i*5),
+      rent: s.type==='tax'?0: Math.max(10, Math.floor((100 + i*5)/7)),
       owner:null,
       type:s.type
     });
@@ -154,43 +158,42 @@ for(let i=0;i<maxPos;i++){
     properties.push({
       id:i,
       name:`Property ${i}`,
-      price:100 + i*6,
-      rent: Math.max(10, Math.floor((100 + i*6)/7)),
+      price:100 + i*5,
+      rent: Math.max(10, Math.floor((100 + i*5)/7)),
       owner:null,
       type:'property'
     });
   }
 }
 
-/* abbreviation map (apply before trimming) */
-const abbrev = {
-  'Property':'Pro',
-  'Income Tax':'IncTax',
-  'Community Chest':'CMChest',
-  'Electric Company':'ElecCo',
-  'Go To Jail':'GoToJail',
-  'Free Parking':'FreePark',
-  'Just Visiting / Jail':'Jail',
-  'Jail (Just Visiting)':'Jail'
-};
+/* players initial */
+let players = [
+  {id:0,name:'You',color:'#ef4444',pos:0,money:1500,alive:true,isAI:false},
+  {id:1,name:'CPU 1',color:'#3b82f6',pos:0,money:1500,alive:true,isAI:true}
+];
+let currentTurn = 0;
+let diceValue = 0;
 
-/* ---------- Grid / layout helpers ---------- */
+/* board dom */
+const boardEl = document.getElementById(BOARD_ID);
+const logEl = document.getElementById('log');
+
+/* ---------- Grid / Render ---------- */
 function makeGrid(){
   boardEl.innerHTML = '';
   for(let r=0;r<11;r++){
     for(let c=0;c<11;c++){
-      const div = document.createElement('div');
-      div.className = 'cell';
-      boardEl.appendChild(div);
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.gridIndex = r*11 + c;
+      boardEl.appendChild(cell);
     }
   }
-  // add center blank overlay that occupies center 9x9 visually (so inner cells are empty)
-  const center = document.createElement('div');
-  center.className = 'center-blank';
-  boardEl.appendChild(center);
+  // center blank overlay handled with leaving inner cells empty (we'll not render tiles there)
 }
 makeGrid();
 
+/* edge coords mapping for 40 positions */
 function edgeCoords(){
   const coords = [];
   for(let x=0;x<11;x++) coords.push([0,x]);           // top 0..10
@@ -200,11 +203,35 @@ function edgeCoords(){
   return coords;
 }
 const coords = edgeCoords();
-const posToIndex = coords.map(([r,c])=> r*11 + c);
+const posToIndex = coords.map(([r,c]) => r*11 + c);
 
-/* choose color for group */
-function groupColor(group){
-  switch(group){
+/* short label function: uses mapping then trims to fit */
+function shortLabel(text, side){
+  if(!text) return '';
+  // apply mapping
+  for(const key in abbrevMap){
+    const re = new RegExp(key,'i');
+    if(re.test(text)) text = text.replace(re, abbrevMap[key]);
+  }
+  // side influences max chars
+  const maxChars = (side === 'top' || side === 'bottom') ? 14 : 8;
+  if(text.length <= maxChars) return text;
+  // try to take first word or words
+  const parts = text.split(' ');
+  if(parts.length > 1){
+    let s = parts.map(p => p.slice(0,3)).join(' ');
+    if(s.length <= maxChars) return s;
+  }
+  return text.slice(0, Math.max(0, maxChars - 1)) + '…';
+}
+
+/* find color group */
+function findGroup(pos){
+  for(const k in colorGroups) if(colorGroups[k].includes(pos)) return k;
+  return null;
+}
+function groupColor(g){
+  switch(g){
     case 'brown': return getComputedStyle(document.documentElement).getPropertyValue('--brown') || '#8b5a2b';
     case 'lightblue': return getComputedStyle(document.documentElement).getPropertyValue('--lightblue') || '#3aa0ff';
     case 'pink': return getComputedStyle(document.documentElement).getPropertyValue('--pink') || '#d06aa7';
@@ -213,163 +240,122 @@ function groupColor(group){
     case 'yellow': return getComputedStyle(document.documentElement).getPropertyValue('--yellow') || '#f5d23b';
     case 'green': return getComputedStyle(document.documentElement).getPropertyValue('--green') || '#2bb673';
     case 'blue': return getComputedStyle(document.documentElement).getPropertyValue('--blue') || '#1f4fb4';
-    default: return '#334155';
+    default: return '#e5e7eb';
   }
 }
 
-/* find group for a pos */
-function findGroup(pos){
-  for(const k in colorGroups) if(colorGroups[k].includes(pos)) return k;
-  return null;
-}
-
-/* shorten a label using map or trimming to fit */
-function shortenLabel(text, maxChars){
-  if(!text) return '';
-  // apply manual abbreviations first
-  for(const key in abbrev){
-    if(text.toLowerCase().includes(key.toLowerCase())){
-      text = text.replace(new RegExp(key,'ig'), abbrev[key]);
-    }
-  }
-  if(text.length <= maxChars) return text;
-  // try to shorten by splitting words
-  const parts = text.split(' ');
-  if(parts.length>1){
-    const short = parts.map(p => p.slice(0,3)).join('');
-    if(short.length <= maxChars) return short;
-  }
-  // fallback: trim and add ellipsis
-  return text.slice(0, Math.max(0, maxChars-1)) + '…';
-}
-
-/* ---------- Render / UI ---------- */
+/* render board tiles around edge; center left blank */
 function renderBoard(){
+  // clear every cell
   const cells = boardEl.querySelectorAll('.cell');
-  cells.forEach(c => { c.innerHTML=''; c.classList.remove('corner'); c.classList.remove('clickable'); });
+  cells.forEach(c => c.innerHTML = '');
 
-  for(let i=0;i<coords.length;i++){
-    const gridIndex = posToIndex[i];
-    const el = boardEl.children[gridIndex];
-    if(!el) continue;
-    el.innerHTML = '';
-    if(i%10===0) el.classList.add('corner');
+  for(let pos=0; pos<MAX_POS; pos++){
+    const gridIndex = posToIndex[pos];
+    const cell = boardEl.children[gridIndex];
+    if(!cell) continue;
+    // tile wrapper
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    // mark corner style
+    if(pos % 10 === 0) cell.classList.add('corner');
 
-    const side = determineSide(i);
-    const title = document.createElement('div');
-    // orientation
-    title.className = (side==='top' || side==='bottom') ? 'edge-horizontal edge-title' : 'edge-vertical edge-title';
-
-    // color bar if property group
-    const group = findGroup(i);
+    // color bar if in group
+    const group = findGroup(pos);
     if(group){
       const bar = document.createElement('div');
-      bar.className = 'prop-bar';
+      bar.className = 'bar';
       bar.style.background = groupColor(group);
-      el.appendChild(bar);
+      tile.appendChild(bar);
+    } else {
+      // small spacer to keep layout consistent
+      const spacer = document.createElement('div'); spacer.style.height='10px'; spacer.style.marginBottom='4px';
+      tile.appendChild(spacer);
     }
 
-    // compute label and shorten if needed (space differs by side)
-    let label = properties[i].name;
-    if(abbrev[label]) label = abbrev[label];
-    // approximate available chars by side/width (top/bottom horizontal -> more chars)
-    const maxChars = (side==='top' || side==='bottom') ? 18 : 9;
-    const displayLabel = shortenLabel(label, maxChars);
-    title.textContent = displayLabel;
-    el.appendChild(title);
+    const side = determineSide(pos);
+    const label = document.createElement('div');
+    label.className = 'title one-line';
+    label.textContent = shortLabel(properties[pos].name, side);
+    tile.appendChild(label);
 
-    if(properties[i].price > 0){
-      const p = document.createElement('div');
-      p.className = 'price';
-      p.textContent = 'Rp ' + properties[i].price;
-      el.appendChild(p);
+    // show price or small note
+    const bottom = document.createElement('div');
+    bottom.style.width='100%';
+    bottom.style.display='flex';
+    bottom.style.flexDirection='column';
+    bottom.style.alignItems='center';
+    bottom.style.justifyContent='flex-end';
+    if(properties[pos].price > 0){
+      const price = document.createElement('div');
+      price.className = 'price';
+      price.textContent = 'Rp ' + properties[pos].price;
+      bottom.appendChild(price);
     } else {
       const info = document.createElement('div');
-      info.className = 'small';
-      info.textContent = properties[i].type==='tax' ? 'Pay tax' : (properties[i].type==='go' ? 'Collect on pass' : properties[i].type);
-      el.appendChild(info);
+      info.className = 'price';
+      info.textContent = properties[pos].type === 'tax' ? 'Tax' : properties[pos].type === 'go' ? 'GO' : properties[pos].type;
+      bottom.appendChild(info);
     }
-
+    // players placeholder
     const playersHere = document.createElement('div');
     playersHere.className = 'players-on';
-    playersHere.dataset.pos = i;
-    el.appendChild(playersHere);
+    playersHere.dataset.pos = pos;
+    bottom.appendChild(playersHere);
 
-    el.classList.add('clickable');
-    el.addEventListener('click', ()=> showProp(i));
+    tile.appendChild(bottom);
+    cell.appendChild(tile);
+
+    // click handler to view details
+    cell.addEventListener('click', () => showProp(pos));
   }
 
   updatePlayersOnBoard();
 }
 
-/* basic side detection */
+/* which side */
 function determineSide(pos){
-  if(pos>=0 && pos<=10) return 'top';
-  if(pos>10 && pos<=20) return 'right';
-  if(pos>20 && pos<=30) return 'bottom';
+  if(pos >= 0 && pos <= 10) return 'top';
+  if(pos > 10 && pos <= 20) return 'right';
+  if(pos > 20 && pos <= 30) return 'bottom';
   return 'left';
 }
 
-/* ---------- Players & Game logic (simple, includes AI) ---------- */
-let players = [
-  {id:0,name:'You',color:'#ef4444',pos:0,money:1500,alive:true,isAI:false},
-  {id:1,name:'CPU 1',color:'#3b82f6',pos:0,money:1500,alive:true,isAI:true}
-];
-let currentTurn = 0;
-let diceValue = 0;
-const bank = {money:999999};
-
-/* render players list */
-const playersListEl = document.getElementById('playersList');
+/* ---------- Players rendering & updates ---------- */
 function renderPlayersList(){
-  playersListEl.innerHTML='';
-  players.forEach(p=>{
-    const d = document.createElement('div');
-    d.className = 'player' + (currentTurn===p.id ? ' active' : '');
-    d.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:${p.color};border:2px solid #071726"></div>
-                   <div style="flex:1">
-                     <div style="font-weight:700">${p.name}${p.isAI? ' (CPU)':''}</div>
-                     <div class="small">Rp ${p.money}</div>
-                   </div>
-                   <div class="small">Pos: ${p.pos}</div>`;
-    playersListEl.appendChild(d);
-  });
+  const list = document.getElementById('turn');
   document.getElementById('turn').textContent = players[currentTurn] ? players[currentTurn].name : '-';
-  document.getElementById('bank').textContent = 'Rp ' + bank.money;
+  document.getElementById('money').textContent = 'Rp ' + players[currentTurn].money;
 }
 
-/* update pawns on board */
 function updatePlayersOnBoard(){
-  const playersOnEls = boardEl.querySelectorAll('.players-on');
-  playersOnEls.forEach(el=> el.innerHTML='');
-  players.forEach(p=>{
-    if(!p.alive) return;
-    const pos = p.pos % maxPos;
+  // clear all players-on
+  const all = boardEl.querySelectorAll('.players-on');
+  all.forEach(el => el.innerHTML = '');
+  for(const p of players){
+    if(!p.alive) continue;
+    const pos = p.pos % MAX_POS;
     const gridIndex = posToIndex[pos];
     const cell = boardEl.children[gridIndex];
-    if(!cell) return;
-    const playersOn = cell.querySelector('.players-on');
-    if(playersOn){
-      const pawn = document.createElement('span');
-      pawn.className = 'pawn';
-      pawn.style.background = p.color;
-      pawn.title = p.name;
-      playersOn.appendChild(pawn);
-    }
-  });
+    if(!cell) continue;
+    const container = cell.querySelector('.players-on');
+    if(!container) continue;
+    const pawn = document.createElement('span');
+    pawn.className = 'pawn';
+    pawn.style.background = p.color;
+    pawn.title = p.name;
+    container.appendChild(pawn);
+  }
+  // update sidebar info
+  document.getElementById('money').textContent = 'Rp ' + players[currentTurn].money;
+  document.getElementById('turn').textContent = players[currentTurn].name;
 }
 
-/* show property info */
+/* ---------- Show property info & log ---------- */
 function showProp(i){
   const prop = properties[i];
-  const el = document.getElementById('propInfo');
-  el.innerHTML = `<div style="font-weight:700">${prop.name}</div>
-                  <div class="small">Price: Rp ${prop.price} • Rent: Rp ${prop.rent}</div>
-                  <div style="margin-top:6px">${prop.owner===null ? 'Unowned' : 'Owned by ' + (players.find(p=>p.id===prop.owner)?.name || 'Unknown')}</div>
-                  <div style="margin-top:6px" class="small">Type: ${prop.type}</div>`;
+  document.getElementById('tileInfo').textContent = prop.name + (prop.price > 0 ? ' • Rp ' + prop.price : '');
 }
-
-/* logging */
 function log(text){
   const p = document.createElement('div');
   p.textContent = text;
@@ -377,7 +363,7 @@ function log(text){
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-/* roll dice */
+/* ---------- Game mechanics ---------- */
 function rollDice(){
   const p = players[currentTurn];
   if(!p || !p.alive) return;
@@ -388,70 +374,66 @@ function rollDice(){
   renderPlayersList();
 }
 
-/* move and resolve landing */
 function movePlayer(pid, steps){
-  const p = players[pid];
-  const prev = p.pos;
-  p.pos = (p.pos + steps) % maxPos;
+  const player = players[pid];
+  const prev = player.pos;
+  player.pos = (player.pos + steps) % MAX_POS;
 
-  if(prev + steps >= maxPos || p.pos < prev){
-    p.money += 200;
-    log(`${p.name} passed GO and collected Rp 200`);
+  // check pass GO
+  if(prev + steps >= MAX_POS || player.pos < prev){
+    player.money += 200; log(`${player.name} passed GO and collected Rp 200`);
   }
 
   updatePlayersOnBoard();
-  const landed = properties[p.pos];
+  const landed = properties[player.pos];
 
   if(landed.type === 'tax'){
-    p.money -= 200;
-    log(`${p.name} landed on Income Tax and paid Rp 200`);
-    checkBankrupt(p);
+    player.money -= landed.price || 200;
+    log(`${player.name} landed on Tax and paid Rp ${landed.price || 200}`);
+    checkBankrupt(player);
   } else if(landed.type === 'chance' || landed.type === 'community'){
-    const rng = Math.random();
-    if(rng < 0.5){ p.money += 100; log(`${p.name} got +Rp100 from ${landed.name}`); }
-    else { p.money -= 100; log(`${p.name} lost Rp100 from ${landed.name}`); checkBankrupt(p); }
+    // simple random event
+    if(Math.random() < 0.5){ player.money += 100; log(`${player.name} received Rp 100 from ${landed.name}`); }
+    else { player.money -= 100; log(`${player.name} lost Rp 100 from ${landed.name}`); checkBankrupt(player); }
   } else if(landed.type === 'gotojail'){
-    p.pos = 10; // jail index
-    log(`${p.name} was sent to Jail`);
+    player.pos = 10; log(`${player.name} sent to Jail`);
   } else if(landed.price === 0){
-    log(`${p.name} landed on ${landed.name}.`);
+    log(`${player.name} landed on ${landed.name}`);
   } else if(landed.owner === null){
-    log(`${p.name} landed on ${landed.name} — available for Rp ${landed.price}.`);
-    if(p.isAI){
-      setTimeout(()=> aiBuyDecision(p.id, landed.id), 600);
+    log(`${player.name} landed on ${landed.name} — available for Rp ${landed.price}`);
+    if(player.isAI){
+      setTimeout(()=> aiBuyDecision(player.id, landed.id), 550);
     }
-  } else if(landed.owner === p.id){
-    log(`${p.name} landed on their own ${landed.name}.`);
+  } else if(landed.owner === player.id){
+    log(`${player.name} landed on own ${landed.name}`);
   } else {
     const owner = players.find(pl => pl.id === landed.owner);
     const rent = landed.rent;
-    p.money -= rent;
+    player.money -= rent;
     owner.money += rent;
-    log(`${p.name} paid Rp ${rent} rent to ${owner.name} (${landed.name}).`);
-    checkBankrupt(p);
+    log(`${player.name} paid Rp ${rent} rent to ${owner.name} (${landed.name})`);
+    checkBankrupt(player);
   }
   renderPlayersList();
 }
 
-/* buy */
+/* buy current */
 function buyCurrent(){
   const p = players[currentTurn];
   if(!p || !p.alive) return;
   const prop = properties[p.pos];
-  if(prop.price===0){ log('Cannot buy this tile.'); return; }
-  if(prop.owner !== null){ log('Property already owned.'); return; }
+  if(!prop || prop.price === 0){ log('Cannot buy this tile.'); return; }
+  if(prop.owner !== null){ log('Already owned.'); return; }
   if(p.money >= prop.price){
     p.money -= prop.price;
     prop.owner = p.id;
-    log(`${p.name} bought ${prop.name} for Rp ${prop.price}.`);
+    log(`${p.name} bought ${prop.name} for Rp ${prop.price}`);
+    updatePlayersOnBoard();
     renderPlayersList();
-    showProp(p.pos);
-  } else {
-    log(`${p.name} cannot afford ${prop.name}.`);
-  }
+  } else log(`${p.name} cannot afford ${prop.name}`);
 }
 
-/* end turn -> next alive, auto-run AI */
+/* end turn */
 function endTurn(){
   const total = players.length;
   let next = currentTurn;
@@ -460,32 +442,37 @@ function endTurn(){
     if(players[cand].alive){ next = cand; break; }
   }
   currentTurn = next;
-  renderPlayersList();
   log(`Turn: ${players[currentTurn].name}`);
+  renderPlayersList();
   if(players[currentTurn].isAI){
     setTimeout(()=> runAIMove(players[currentTurn].id), 700);
   }
 }
 
-/* bankrupt */
+/* bankruptcy */
 function checkBankrupt(player){
   if(player.money < 0){
     player.alive = false;
     properties.forEach(prop => { if(prop.owner === player.id) prop.owner = null; });
     log(`${player.name} went bankrupt and is eliminated.`);
-    const alive = players.filter(p=>p.alive);
+    const alive = players.filter(p => p.alive);
     if(alive.length === 1){
       log(`🏆 ${alive[0].name} wins!`);
-      document.getElementById('rollBtn').disabled = true;
-      document.getElementById('buyBtn').disabled = true;
-      document.getElementById('endBtn').disabled = true;
+      disableControls();
     } else {
       if(!players[currentTurn].alive) endTurn();
     }
   }
 }
 
-/* ---------- AI (heuristic) ---------- */
+/* disable controls on game end */
+function disableControls(){
+  document.getElementById('rollBtn').disabled = true;
+  document.getElementById('buyBtn').disabled = true;
+  document.getElementById('endBtn').disabled = true;
+}
+
+/* ---------- AI heuristic ---------- */
 function aiBuyDecision(aiId, propId){
   const ai = players.find(p=>p.id===aiId);
   const prop = properties[propId];
@@ -502,48 +489,56 @@ function aiBuyDecision(aiId, propId){
 
   const willHave = ai.money - price;
   let decision = false;
-  if(willHave < 100) decision = false;
-  else if(group && ownInGroup + 1 === totalInGroup) decision = true;
-  else if(price <= 180) decision = true;
+  if(willHave < 150) decision = false;
+  else if(group && ownInGroup + 1 === totalInGroup) decision = true; // completes set
+  else if(price <= 180) decision = true; // cheap
   else if(rent * 8 > price) decision = true;
   else decision = false;
 
   if(decision){
     ai.money -= price;
     prop.owner = ai.id;
-    log(`${ai.name} (AI) bought ${prop.name} for Rp ${price}`);
+    log(`${ai.name} bought ${prop.name} (Rp ${price})`);
   } else {
-    log(`${ai.name} (AI) decided NOT to buy ${prop.name}`);
+    log(`${ai.name} decided NOT to buy ${prop.name}`);
   }
   renderPlayersList();
 }
 
-/* run ai turn */
+/* run AI turn end-to-end (roll, decide, end) */
 function runAIMove(aiId){
   const idx = players.findIndex(p=>p.id===aiId);
   if(idx === -1) return;
   currentTurn = idx;
   renderPlayersList();
-  setTimeout(()=> { rollDice(); setTimeout(()=> endTurn(), 1200); }, 500);
+  setTimeout(()=> {
+    rollDice();
+    setTimeout(()=> { endTurn(); }, 1200);
+  }, 300);
 }
 
-/* ---------- Controls ---------- */
-document.getElementById('rollBtn').addEventListener('click', ()=> { if(players[currentTurn].isAI) return; rollDice(); });
-document.getElementById('buyBtn').addEventListener('click', ()=> { if(players[currentTurn].isAI) return; buyCurrent(); });
-document.getElementById('endBtn').addEventListener('click', ()=> { if(players[currentTurn].isAI) return; endTurn(); });
-
-/* add CPU */
-document.getElementById('addAI').addEventListener('click', ()=>{
+/* ---------- Controls binding ---------- */
+document.getElementById('rollBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  rollDice();
+});
+document.getElementById('buyBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  buyCurrent();
+});
+document.getElementById('endBtn').addEventListener('click', ()=> {
+  if(players[currentTurn].isAI) return;
+  endTurn();
+});
+document.getElementById('addAI').addEventListener('click', ()=> {
   const newId = players.length ? Math.max(...players.map(p=>p.id)) + 1 : 0;
   const colors = ['#a78bfa','#10b981','#f97316','#06b6d4','#c026d3'];
   players.push({id:newId,name:`CPU ${newId}`,color:colors[newId%colors.length]||'#999999',pos:0,money:1500,alive:true,isAI:true});
   log(`Added CPU ${newId}`);
   renderPlayersList();
 });
-
-/* reset */
-document.getElementById('reset').addEventListener('click', ()=>{
-  properties.forEach(p=> p.owner = null);
+document.getElementById('reset').addEventListener('click', ()=> {
+  properties.forEach(p => p.owner = null);
   players = [
     {id:0,name:'You',color:'#ef4444',pos:0,money:1500,alive:true,isAI:false},
     {id:1,name:'CPU 1',color:'#3b82f6',pos:0,money:1500,alive:true,isAI:true}
@@ -551,7 +546,7 @@ document.getElementById('reset').addEventListener('click', ()=>{
   currentTurn = 0;
   diceValue = 0;
   document.getElementById('dice').textContent = '-';
-  document.getElementById('propInfo').textContent = 'Tap a tile or land on it to view details.';
+  document.getElementById('tileInfo').textContent = '-';
   logEl.innerHTML = '';
   log('Game reset.');
   renderBoard();
@@ -561,8 +556,11 @@ document.getElementById('reset').addEventListener('click', ()=>{
 /* ---------- Init ---------- */
 renderBoard();
 renderPlayersList();
-log('Ready. Full classic-style board rendered. Labels auto-abbreviate when necessary. Click Roll Dice to play.');
-showProp(0);
+log('Board ready — 40 tiles (10 per side). Labels use chosen abbreviations (Prop, Chance, Tax, Rail, Community, Jail, GoToJail). UI below board. Click Roll Dice to play.');
+
+/* expose showProp for initial slot */
+function showPropInit(){ showProp(0); }
+showPropInit();
 </script>
 </body>
-</html>
+  </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monopoly Simple</title>
+<title>NextPoly</title>
 
 <style>
     body {
@@ -11,118 +11,132 @@
         background: #e9e4d8;
         font-family: Arial, sans-serif;
         display: flex;
-        flex-direction: column;
-        align-items: center;
+        justify-content: center;
+        padding: 20px;
     }
 
-    /* WRAPPER AGAR RESPONSIVE */
+    /* BOARD WRAPPER – RESPONSIVE SCALE */
     #board-wrapper {
-        width: 900px;
-        height: 900px;
+        width: 500px;
+        height: 500px;
+        position: relative;
         transform-origin: top center;
     }
 
-    /* PAPAN 1:1 */
+    /* BOARD */
     #board {
-        width: 900px;
-        height: 900px;
-        background: #f4ecd8; /* warna kertas */
+        width: 500px;
+        height: 500px;
+        background: #f4ecd8;
         border: 4px solid #000;
         display: grid;
         grid-template-columns: repeat(11, 1fr);
         grid-template-rows: repeat(11, 1fr);
+        box-sizing: border-box;
         position: relative;
     }
 
-    /* TILE — lebih besar karena 90x90 */
+    /* KOTAK */
     .tile {
-        width: 90px;
-        height: 90px;
         border: 1px solid #000;
-        background: white;
-        box-sizing: border-box;
+        background: #fff;
         display: flex;
         flex-direction: column;
-        justify-content: flex-end;
-        align-items: center;
-        padding: 3px;
-        font-size: 15px;
-        overflow: hidden;
+        padding: 2px;
+        box-sizing: border-box;
+        justify-content: space-between;
+        text-align: center;
+        font-size: 11px;
     }
 
-    /* strip warna properti */
+    .price {
+        font-size: 10px;
+        font-weight: bold;
+    }
+
+    .label {
+        font-size: 12px;
+        font-weight: bold;
+    }
+
     .color-strip {
         width: 100%;
-        height: 25px;
+        height: 20px;
     }
 
-    /* nama tile — hanya text, tidak ada harga */
-    .tile-label {
-        font-size: 14px;
-        font-weight: bold;
-        text-align: center;
+    /* AREA TENGAH */
+    #center {
+        grid-row: 2 / 11;
+        grid-column: 2 / 11;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        font-size:40px;
+        font-weight:bold;
+        pointer-events:none;
+        opacity:0.2;
     }
 
-    /* RESPONSIVE SCALE untuk HP */
-    @media (max-width: 950px) { #board-wrapper { transform: scale(0.85); } }
-    @media (max-width: 800px) { #board-wrapper { transform: scale(0.75); } }
-    @media (max-width: 700px) { #board-wrapper { transform: scale(0.65); } }
-    @media (max-width: 600px) { #board-wrapper { transform: scale(0.55); } }
-    @media (max-width: 500px) { #board-wrapper { transform: scale(0.45); } }
-    @media (max-width: 400px) { #board-wrapper { transform: scale(0.40); } }
+    /* RESPONSIVE SCALE */
+    @media (max-width: 550px) { #board-wrapper { transform: scale(0.9); } }
+    @media (max-width: 480px) { #board-wrapper { transform: scale(0.8); } }
+    @media (max-width: 420px) { #board-wrapper { transform: scale(0.7); } }
+    @media (max-width: 360px) { #board-wrapper { transform: scale(0.6); } }
 </style>
 </head>
-
 <body>
 
 <div id="board-wrapper">
     <div id="board">
 
-        <!-- ROW ATAS 10 TILE -->
-        <div class="tile"><div class="tile-label">GO</div></div>
-        <div class="tile"><div class="color-strip" style="background:#8b4513"></div><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Chance</div></div>
-        <div class="tile"><div class="color-strip" style="background:#8b4513"></div><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Tax</div></div>
-        <div class="tile"><div class="tile-label">Rail</div></div>
-        <div class="tile"><div class="color-strip" style="background:#add8e6"></div><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Chance</div></div>
-        <div class="tile"><div class="color-strip" style="background:#add8e6"></div><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Jail</div></div>
+        <!-- ROW ATAS (sisi 1 – 10 tiles) -->
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro1</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro2</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Tax</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail1</div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro3</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro4</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div></div>
 
-        <!-- 9 TILE SISI KANAN -->
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Community</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Rail</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Chance</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Tax</div></div>
-        <div class="tile"><div class="tile-label">GoToJail</div></div>
+        <!-- SISI KANAN -->
+        <div class="tile"><div class="price">$140</div><div class="label">Pro5</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
+        <div class="tile"><div class="price">$140</div><div class="label">Pro6</div></div>
+        <div class="tile"><div class="price">$160</div><div class="label">Pro7</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail2</div></div>
+        <div class="tile"><div class="price">$180</div><div class="label">Pro8</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Pro9</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GoJ</div></div>
 
-        <!-- ROW BAWAH -->
-        <div class="tile"><div class="tile-label">Free</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Community</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Rail</div></div>
-        <div class="tile"><div class="tile-label">Chance</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Tax</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">GO</div></div>
+        <!-- BOTTOM SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Free</div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro10</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro11</div></div>
+        <div class="tile"><div class="price">$240</div><div class="label">Pro12</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail3</div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro13</div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro14</div></div>
+        <div class="tile"><div class="price">$280</div><div class="label">Pro15</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div></div>
 
-        <!-- SISI KIRI -->
-        <div class="tile"><div class="tile-label">Jail</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Chance</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Rail</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Community</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
-        <div class="tile"><div class="tile-label">Prop</div></div>
+        <!-- LEFT SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro16</div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro17</div></div>
+        <div class="tile"><div class="price">$320</div><div class="label">Pro18</div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail4</div></div>
+        <div class="tile"><div class="price">$350</div><div class="label">Pro19</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div></div>
+        <div class="tile"><div class="price">$400</div><div class="label">Pro20</div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Tax</div></div>
+
+        <!-- CENTER -->
+        <div id="center">NextPoly</div>
 
     </div>
 </div>

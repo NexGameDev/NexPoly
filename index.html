@@ -4,58 +4,78 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>NextPoly - Full 40 Tiles</title>
-<link rel="stylesheet" href="style.css">
+<style>
+  body{margin:0;font-family:Arial,sans-serif;background:#e9e4d8;display:flex;flex-direction:column;align-items:center;padding:20px;}
+  #board-wrapper{position:relative;width:550px;height:550px;margin-bottom:10px;}
+  #board{position:relative;width:100%;height:100%;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);}
+  .tile{border:1px solid #333;position:relative;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;}
+  .tile .owner{position:absolute;bottom:2px;right:2px;font-size:10px;}
+  #player, #computer{position:absolute;width:30px;height:30px;border-radius:50%;z-index:10;}
+  #player{background:blue;} #computer{background:red;}
+  #controls{margin:10px;}
+  #info{margin:10px;}
+  #notification{margin:10px;font-weight:bold;}
+  #turnIndicator{margin:5px;font-weight:bold;}
+  #helpBox{display:none;border:1px solid #333;padding:5px;margin:5px;background:#fff;width:200px;}
+  .deck{display:inline-block;padding:5px 10px;margin:5px;border:1px solid #333;cursor:pointer;}
+  #getCardHint{margin:5px;font-weight:bold;color:green;display:none;}
+  #cardPopup{position:absolute;display:none;z-index:20;}
+  .card-back,.card-reveal,.card-zoom{width:150px;height:100px;border:2px solid #000;border-radius:5px;padding:5px;text-align:center;background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .card-back{background:#aaa;color:#fff;}
+  .card-reveal{background:#f8f8f8;color:#000;}
+  .card-zoom{background:#f8f8f8;cursor:pointer;}
+</style>
 </head>
 <body>
+
 <div id="board-wrapper">
   <div id="board">
-    <!-- 0-39 Tiles -->
-    <div class="tile" data-type="go" data-price="0">GO<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="60" data-prop="1">Pro1<div class="owner"></div></div>
-    <div class="tile" data-type="chance" data-price="0">Cha<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="60" data-prop="2">Pro2<div class="owner"></div></div>
-    <div class="tile" data-type="tax" data-price="200">Tax<div class="owner"></div></div>
-    <div class="tile" data-type="rail" data-price="200" data-rail="1">Rail1<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="100" data-prop="3">Pro3<div class="owner"></div></div>
-    <div class="tile" data-type="community" data-price="0">Com<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="100" data-prop="4">Pro4<div class="owner"></div></div>
-    <div class="tile" data-type="jail" data-price="0">Jail<div class="owner"></div></div>
+    <!-- 40 Tiles -->
+    <div class="tile" data-type="go">GO<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="1">Pro1<div class="owner"></div></div>
+    <div class="tile" data-type="chance">Chance<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="2">Pro2<div class="owner"></div></div>
+    <div class="tile" data-type="tax">Tax<div class="owner"></div></div>
+    <div class="tile" data-type="rail" data-rail="1">Rail1<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="3">Pro3<div class="owner"></div></div>
+    <div class="tile" data-type="community">Community<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="4">Pro4<div class="owner"></div></div>
+    <div class="tile" data-type="jail">Jail<div class="owner"></div></div>
 
-    <div class="tile" data-type="property" data-price="140" data-prop="5">Pro5<div class="owner"></div></div>
-    <div class="tile" data-type="chance" data-price="0">Cha<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="140" data-prop="6">Pro6<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="160" data-prop="7">Pro7<div class="owner"></div></div>
-    <div class="tile" data-type="rail" data-price="200" data-rail="2">Rail2<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="180" data-prop="8">Pro8<div class="owner"></div></div>
-    <div class="tile" data-type="community" data-price="0">Com<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="200" data-prop="9">Pro9<div class="owner"></div></div>
-    <div class="tile" data-type="go" data-price="0">GoJ<div class="owner"></div></div>
-    <div class="tile" data-type="bonus" data-price="50">ExtraR<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="5">Pro5<div class="owner"></div></div>
+    <div class="tile" data-type="chance">Chance<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="6">Pro6<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="7">Pro7<div class="owner"></div></div>
+    <div class="tile" data-type="rail" data-rail="2">Rail2<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="8">Pro8<div class="owner"></div></div>
+    <div class="tile" data-type="community">Community<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="9">Pro9<div class="owner"></div></div>
+    <div class="tile" data-type="gojail">GoJail<div class="owner"></div></div>
+    <div class="tile" data-type="bonus">ExtraR<div class="owner"></div></div>
 
-    <div class="tile" data-type="free" data-price="0">Free<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="220" data-prop="10">Pro10<div class="owner"></div></div>
-    <div class="tile" data-type="chance" data-price="0">Cha<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="220" data-prop="11">Pro11<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="240" data-prop="12">Pro12<div class="owner"></div></div>
-    <div class="tile" data-type="rail" data-price="200" data-rail="3">Rail3<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="260" data-prop="13">Pro13<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="260" data-prop="14">Pro14<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="280" data-prop="15">Pro15<div class="owner"></div></div>
-    <div class="tile" data-type="bonus" data-price="50">ExtraL<div class="owner"></div></div>
+    <div class="tile" data-type="free">Free<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="10">Pro10<div class="owner"></div></div>
+    <div class="tile" data-type="chance">Chance<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="11">Pro11<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="12">Pro12<div class="owner"></div></div>
+    <div class="tile" data-type="rail" data-rail="3">Rail3<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="13">Pro13<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="14">Pro14<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="15">Pro15<div class="owner"></div></div>
+    <div class="tile" data-type="bonus">ExtraL<div class="owner"></div></div>
 
-    <div class="tile" data-type="jail" data-price="0">Jail<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="300" data-prop="16">Pro16<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="300" data-prop="17">Pro17<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="320" data-prop="18">Pro18<div class="owner"></div></div>
-    <div class="tile" data-type="rail" data-price="200" data-rail="4">Rail4<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="350" data-prop="19">Pro19<div class="owner"></div></div>
-    <div class="tile" data-type="community" data-price="0">Com<div class="owner"></div></div>
-    <div class="tile" data-type="property" data-price="400" data-prop="20">Pro20<div class="owner"></div></div>
-    <div class="tile" data-type="tax" data-price="0">Tax<div class="owner"></div></div>
-    <div class="tile" data-type="bonus" data-price="50">ExtraL<div class="owner"></div></div>
+    <div class="tile" data-type="jail">Jail<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="16">Pro16<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="17">Pro17<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="18">Pro18<div class="owner"></div></div>
+    <div class="tile" data-type="rail" data-rail="4">Rail4<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="19">Pro19<div class="owner"></div></div>
+    <div class="tile" data-type="community">Community<div class="owner"></div></div>
+    <div class="tile" data-type="property" data-prop="20">Pro20<div class="owner"></div></div>
+    <div class="tile" data-type="tax">Tax<div class="owner"></div></div>
+    <div class="tile" data-type="bonus">ExtraL<div class="owner"></div></div>
 
-    <!-- center & tokens -->
-    <div id="center">NextPoly</div>
+    <!-- Tokens -->
     <div id="player" class="token"></div>
     <div id="computer" class="token"></div>
   </div>

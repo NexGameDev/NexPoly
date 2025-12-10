@@ -1,10 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NextPoly</title>
+<style>
+    body {
+        margin: 0;
+        background: #e9e4d8;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+
+    #board-wrapper {
+        width: 500px;
+        height: 500px;
+        position: relative;
+        transform-origin: top center;
+    }
+
+    #board {
+        width: 500px;
+        height: 500px;
+        background: #f4ecd8;
+        border: 4px solid #000;
+        display: grid;
+        grid-template-columns: repeat(11, 1fr);
+        grid-template-rows: repeat(11, 1fr);
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    .tile {
+        border: 1px solid #000;
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        padding: 2px;
+        box-sizing: border-box;
+        justify-content: space-between;
+        text-align: center;
+        font-size: 11px;
+        position: relative;
+    }
+
+    .price { font-size: 10px; font-weight: bold; }
+    .label { font-size: 12px; font-weight: bold; }
+
+    .owner {
+        position: absolute;
+        width: 100%;
+        height: 4px;
+        bottom: 0;
+        left: 0;
+    }
+
+    #center {
+        grid-row: 2 / 11;
+        grid-column: 2 / 11;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        font-size:40px;
+        font-weight:bold;
+        pointer-events:none;
+        opacity:0.2;
+    }
+
+    .token {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        position: absolute;
+        transition: all 0.2s linear;
+        z-index: 2;
+    }
+
+    #player { background: blue; } 
+    #computer { background: red; } 
+
+    #controls {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    button { padding: 8px 12px; font-size: 14px; cursor: pointer; }
+
+    #info { margin-top: 10px; font-weight: bold; display:flex; gap:20px; align-items:center; }
+    #notification { margin-top: 8px; font-weight: bold; min-height:18px; }
+
+    #helpBox {
+        display:none; 
+        margin-top:10px; 
+        border:1px solid #000; 
+        padding:10px; 
+        background:#fff;
+    }
+
+    /* card popup (generic container) */
+    .card-popup {
+        position: absolute;
+        display: none;
+        z-index: 50;
+        text-align: center;
+        cursor: pointer;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* back of card design when shown flipped (small) */
+    .card-back {
+        width: 140px;
+        height: 90px;
+        border-radius: 8px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    /* player zoom card */
+    .card-zoom {
+        width: 300px;
+        min-height: 140px;
+        padding: 18px;
+        border-radius: 10px;
+        background: #fff;
+        border: 6px solid blue;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        font-size: 20px;
+        z-index: 100;
+    }
+
+    /* small reveal text (for computer) */
+    .card-reveal {
+        width: 260px;
+        min-height: 100px;
+        padding: 10px;
+        border-radius: 8px;
+        background: #fff;
+        border: 4px solid red;
+        font-size: 18px;
+        z-index: 100;
+    }
+
+    /* decks area underneath board */
+    #decks {
+        margin-top: 10px;
+        display:flex;
+        gap:12px;
+        align-items:center;
+    }
+    .deck {
+        width:140px;
+        height:90px;
+        border-radius:8px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-weight:bold;
+        color:#fff;
+        cursor:pointer;
+        user-select:none;
+    }
+    .deck.chance { background: blue; }
+    .deck.comm { background: red; }
+
+    @media (max-width: 550px) { #board-wrapper { transform: scale(0.9); } }
+    @media (max-width: 480px) { #board-wrapper { transform: scale(0.8); } }
+    @media (max-width: 420px) { #board-wrapper { transform: scale(0.7); } }
+    @media (max-width: 360px) { #board-wrapper { transform: scale(0.6); } }
+</style>
+</head>
+<body>
+
+<div id="board-wrapper">
+    <div id="board">
+        <!-- ROW ATAS -->
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro1</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$60</div><div class="label">Pro2</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Tax</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail1</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro3</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$100</div><div class="label">Pro4</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
+
+        <!-- SISI KANAN -->
+        <div class="tile"><div class="price">$140</div><div class="label">Pro5</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$140</div><div class="label">Pro6</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$160</div><div class="label">Pro7</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail2</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$180</div><div class="label">Pro8</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Pro9</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GoJ</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$50</div><div class="label">ExtraR</div><div class="owner"></div></div>
+
+        <!-- BOTTOM SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Free</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro10</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$220</div><div class="label">Pro11</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$240</div><div class="label">Pro12</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail3</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro13</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$260</div><div class="label">Pro14</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$280</div><div class="label">Pro15</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
+
+        <!-- LEFT SIDE -->
+        <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro16</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$300</div><div class="label">Pro17</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$320</div><div class="label">Pro18</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$200</div><div class="label">Rail4</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$350</div><div class="label">Pro19</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$400</div><div class="label">Pro20</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$0</div><div class="label">Tax</div><div class="owner"></div></div>
+        <div class="tile"><div class="price">$50</div><div class="label">ExtraL</div><div class="owner"></div></div>
+
+        <div id="center">NextPoly</div>
+        <div id="player" class="token"></div>
+        <div id="computer" class="token"></div>
+    </div>
+</div>
+
+<!-- controls + money display -->
+<div id="controls">
+    <button id="rollBtn">Roll Dice</button>
+    <button id="helpBtn">?</button>
+</div>
+
+<div id="info">
+    <div>Blue = Player | Red = Computer</div>
+    <div style="display:flex; gap:10px; margin-left:10px; align-items:center;">
+        <div>Player: <span id="moneyP">$1000</span></div>
+        <div>Computer: <span id="moneyC">$1000</span></div>
+    </div>
+</div>
+
+<div id="notification"></div>
+<div id="turnIndicator">Turn: Player</div>
+
+<div id="helpBox">
+    Klik tombol "Roll Dice" untuk melempar dadu.<br>
+    Token bergerak sesuai angka dadu.<br>
+    Blue = Player | Red = Computer.
+</div>
+
+<!-- decks under the board -->
+<div id="decks">
+    <div class="deck chance" id="deckChance">Chance (Blue)</div>
+    <div class="deck comm" id="deckComm">Community (Red)</div>
+</div>
+
+<!-- popup container (used for zoom and computer flip) -->
+<div id="cardPopup" class="card-popup"></div>
+
 <script>
+/* ---------------------
+   Elements & state
+   --------------------- */
 const rollBtn = document.getElementById('rollBtn');
 const helpBtn = document.getElementById('helpBtn');
 const helpBox = document.getElementById('helpBox');
 const turnIndicator = document.getElementById('turnIndicator');
 const notification = document.getElementById('notification');
 const cardPopup = document.getElementById('cardPopup');
+const deckChanceEl = document.getElementById('deckChance');
+const deckCommEl = document.getElementById('deckComm');
 
 let playerPos = 0;
 let computerPos = 0;
@@ -19,38 +294,24 @@ const tileSize = board.offsetWidth / 11;
 
 let owners = Array(totalTiles).fill(null);
 
-// ========== FIX: TILE CHECKING SEHARUSNYA TIDAK DIPICU GANDA ==========
-function moveToken(token, position, triggerTile = true) {
-    const pos = getTilePosition(position);
-    token.style.top = pos.top + 'px';
-    token.style.left = pos.left + 'px';
+let playerMoney = 1000;
+let computerMoney = 1000;
+const moneyP = document.getElementById("moneyP");
+const moneyC = document.getElementById("moneyC");
+function updateMoneyUI(){ moneyP.innerText = "$" + playerMoney; moneyC.innerText = "$" + computerMoney; }
+updateMoneyUI();
 
-    if (triggerTile) {
-        setTimeout(() => {
-            checkTile(token, position);
-        }, 300);
+/* ---------------------
+   Helpers
+   --------------------- */
+function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+        let j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]] = [arr[j],arr[i]];
     }
 }
 
-function updateNotification(msg) { notification.innerText = msg; }
-
-const chanceCards = [
-    {text: "Advance to GO", action: ()=>{
-        playerPos = 0;
-        moveToken(playerToken, 0, false);
-        updateNotification("Player moves to GO");
-    }},
-    {text: "Pay $50", action: ()=>{ updateNotification("Player pays $50"); }}
-];
-
-const communityCards = [
-    {text: "Receive $50", action: ()=>{ updateNotification("Player receives $50"); }},
-    {text: "Go to Jail", action: ()=>{
-        playerPos = 10;
-        moveToken(playerToken, 10, false);
-        updateNotification("Player goes to Jail");
-    }}
-];
+function updateNotification(msg){ notification.innerText = msg; }
 
 function getTilePosition(index){
     let row=0,col=0;
@@ -61,76 +322,263 @@ function getTilePosition(index){
     return {top: row*tileSize, left: col*tileSize};
 }
 
-// ========== FIX: TILE CHECKING SEKARANG 100% SESUAI TILE ASLI ==========
+/* ---------------------
+   Movement: step-by-step
+   --------------------- */
+function moveTokenInstant(token, position){
+    const pos = getTilePosition(position);
+    token.style.top = pos.top + 'px';
+    token.style.left = pos.left + 'px';
+}
+
+function moveStep(token, current, target, callback){
+    if(current === target){ callback(); return; }
+    const next = (current + 1) % totalTiles;
+    moveTokenInstant(token, next);
+    setTimeout(()=> moveStep(token, next, target, callback), 120);
+}
+
+function moveTokenSmooth(token, from, to, callback){
+    moveStep(token, from, to, callback);
+}
+
+/* ---------------------
+   Cards: content + shuffle
+   --------------------- */
+const chanceCards = [
+    { text: "Advance to GO", action: (who)=>{
+        if(who==='player'){ playerPos=0; moveTokenInstant(playerToken,0); updateNotification("Player moves to GO"); }
+        else { computerPos=0; moveTokenInstant(computerToken,0); updateNotification("Computer moves to GO"); }
+    }},
+    { text: "Pay $50", action: (who)=>{
+        if(who==='player'){ playerMoney-=50; updateMoneyUI(); updateNotification("Player pays $50"); }
+        else { computerMoney-=50; updateMoneyUI(); updateNotification("Computer pays $50"); }
+    }},
+    { text: "Receive $100", action: (who)=>{
+        if(who==='player'){ playerMoney+=100; updateMoneyUI(); updateNotification("Player receives $100"); }
+        else { computerMoney+=100; updateMoneyUI(); updateNotification("Computer receives $100"); }
+    }}
+];
+
+const communityCards = [
+    { text: "Receive $50", action: (who)=>{
+        if(who==='player'){ playerMoney+=50; updateMoneyUI(); updateNotification("Player receives $50"); }
+        else { computerMoney+=50; updateMoneyUI(); updateNotification("Computer receives $50"); }
+    }},
+    { text: "Go to Jail", action: (who)=>{
+        if(who==='player'){ playerPos=10; moveTokenInstant(playerToken,10); updateNotification("Player goes to Jail"); }
+        else { computerPos=10; moveTokenInstant(computerToken,10); updateNotification("Computer goes to Jail"); }
+    }},
+    { text: "Pay $30", action: (who)=>{
+        if(who==='player'){ playerMoney-=30; updateMoneyUI(); updateNotification("Player pays $30"); }
+        else { computerMoney-=30; updateMoneyUI(); updateNotification("Computer pays $30"); }
+    }}
+];
+
+// shuffle decks each new page load / game start
+shuffle(chanceCards);
+shuffle(communityCards);
+
+/* ---------------------
+   Deck UI click (optional visual) - shows back of card
+   --------------------- */
+deckChanceEl.onclick = ()=> {
+    // show back (blue) as visual
+    const back = document.createElement('div');
+    back.className = 'card-back';
+    back.style.background = 'blue';
+    back.innerHTML = '<div style="font-size:16px">NextPoly</div>';
+    cardPopup.innerHTML = '';
+    cardPopup.appendChild(back);
+    cardPopup.style.top = (board.getBoundingClientRect().bottom + 10) + 'px';
+    cardPopup.style.display = 'block';
+    setTimeout(()=> cardPopup.style.display='none', 700);
+};
+deckCommEl.onclick = ()=> {
+    const back = document.createElement('div');
+    back.className = 'card-back';
+    back.style.background = 'red';
+    back.innerHTML = '<div style="font-size:16px">NextPoly</div>';
+    cardPopup.innerHTML = '';
+    cardPopup.appendChild(back);
+    cardPopup.style.top = (board.getBoundingClientRect().bottom + 10) + 'px';
+    cardPopup.style.display = 'block';
+    setTimeout(()=> cardPopup.style.display='none', 700);
+};
+
+/* ---------------------
+   Show card logic:
+   - if who==='player' => zoom card (big), click to dismiss -> executes action
+   - if who==='computer' => show back (red) then reveal, then executes action automatically (small)
+   --------------------- */
+function showCard(deck, who){
+    if(!deck || deck.length===0) return;
+    // draw top card
+    const card = deck.shift();
+    deck.push(card); // put to bottom to keep deck rotated (we already shuffled earlier)
+
+    // position popup roughly center above decks
+    const topPos = board.getBoundingClientRect().bottom + 20;
+    cardPopup.style.top = topPos + 'px';
+    cardPopup.style.display = 'block';
+    cardPopup.innerHTML = '';
+
+    if(who === 'player'){
+        // zoom card (blue border)
+        const zoom = document.createElement('div');
+        zoom.className = 'card-zoom';
+        zoom.style.borderColor = 'blue';
+        zoom.innerHTML = `<div style="font-size:16px; color:blue; font-weight:bold; margin-bottom:8px">NextPoly</div>
+                          <div>${card.text}</div>
+                          <div style="font-size:12px;margin-top:8px;color:#666">Click card to close and apply</div>`;
+        cardPopup.appendChild(zoom);
+
+        // click to apply and close
+        cardPopup.onclick = ()=>{
+            card.action('player');
+            cardPopup.style.display = 'none';
+            cardPopup.onclick = null;
+        };
+    } else {
+        // computer: show small back then reveal then auto apply
+        const back = document.createElement('div');
+        back.className = 'card-back';
+        back.style.background = 'red';
+        back.innerHTML = '<div style="font-size:16px">NextPoly</div>';
+        cardPopup.appendChild(back);
+
+        // after short delay reveal content then apply on click or auto after delay
+        setTimeout(()=>{
+            cardPopup.innerHTML = '';
+            const reveal = document.createElement('div');
+            reveal.className = 'card-reveal';
+            reveal.innerHTML = `<div style="font-size:16px;color:red;font-weight:bold;margin-bottom:8px">NextPoly</div>
+                                <div>${card.text}</div>`;
+            cardPopup.appendChild(reveal);
+
+            // auto-apply after short pause and close
+            setTimeout(()=>{
+                card.action('computer');
+                cardPopup.style.display = 'none';
+            }, 900);
+        }, 600);
+    }
+}
+
+/* ---------------------
+   Tile check
+   --------------------- */
 function checkTile(token, index){
     const tile = tiles[index];
     const label = tile.querySelector('.label').innerText;
 
-    // Property
-    if (label.startsWith("Pro")) {
-        if (!owners[index] && token.id === "player") {
-            if (confirm("Do you want to buy this property?")) {
-                owners[index] = "player";
-                tile.querySelector('.owner').style.background = 'blue';
+    // Property handling
+    if(label.startsWith('Pro')){
+        if(!owners[index]){
+            if(token.id === 'player'){
+                // price variable — using simple 100 here for all properties
+                const price = 100;
+                if(confirm(`Buy ${tile.querySelector('.label').innerText} for $${price}?`)){
+                    if(playerMoney >= price){
+                        playerMoney -= price;
+                        owners[index] = 'player';
+                        tile.querySelector('.owner').style.background = 'blue';
+                        updateMoneyUI();
+                        updateNotification('Property purchased by Player');
+                    } else updateNotification('Not enough money');
+                }
+            } else {
+                // simple AI buys if has enough money
+                const price = 100;
+                if(computerMoney >= price){
+                    computerMoney -= price;
+                    owners[index] = 'computer';
+                    tile.querySelector('.owner').style.background = 'red';
+                    updateMoneyUI();
+                    updateNotification('Property purchased by Computer');
+                }
             }
-        } else if (!owners[index] && token.id === "computer") {
-            owners[index] = "computer";
-            tile.querySelector('.owner').style.background = 'red';
-        } else if (owners[index] && owners[index] !== token.id) {
-            updateNotification(token.id === "player" ? "Pay rent to computer" : "Pay rent to player");
+        } else if(owners[index] !== token.id){
+            // pay rent
+            const rent = 50;
+            if(token.id === 'player'){
+                playerMoney -= rent;
+                computerMoney += rent;
+                updateNotification(`Player pays rent $${rent}`);
+            } else {
+                computerMoney -= rent;
+                playerMoney += rent;
+                updateNotification(`Computer pays rent $${rent}`);
+            }
+            updateMoneyUI();
         }
     }
 
-    // Cards — FIX: hanya menampilkan, tidak memicu tile lain
-    if (label === "Cha") showCard(chanceCards);
-    if (label === "Com") showCard(communityCards);
+    // Cards
+    if(label === 'Cha') showCard(chanceCards, token.id);
+    if(label === 'Com') showCard(communityCards, token.id);
 
     // Special tiles
-    if (label === "Jail") updateNotification("Landed on Jail");
-    if (label === "Tax") updateNotification("Pay tax $200");
-    if (label === "GoJ") updateNotification("Go to Jail");
-    if (label === "Free") updateNotification("Free Parking");
+    if(label === 'Jail') updateNotification('Landed on Jail');
+    if(label === 'Tax'){
+        updateNotification('Pay tax $200');
+        if(token.id === 'player'){ playerMoney -= 200; } else { computerMoney -= 200; }
+        updateMoneyUI();
+    }
+    if(label === 'GoJ'){
+        updateNotification('Go to Jail');
+        if(token.id === 'player'){ playerPos = 10; moveTokenInstant(playerToken,10); } 
+        else { computerPos = 10; moveTokenInstant(computerToken,10); }
+    }
+    if(label === 'Free') updateNotification('Free Parking');
 }
 
-// ========== FIX: CARD POPUP TIDAK MEMICU TILE LAIN ==========
-function showCard(deck){
-    const card = deck[Math.floor(Math.random() * deck.length)];
-    cardPopup.innerText = card.text;
-    cardPopup.style.display = 'block';
-    cardPopup.style.top = '200px';
-    cardPopup.style.left = '150px';
-
-    cardPopup.onclick = () => {
-        card.action();
-        cardPopup.style.display = 'none';
-        cardPopup.onclick = null;
-    };
-}
-
-// TURN SYSTEM
+/* ---------------------
+   Turn system (uses step movement)
+   --------------------- */
 rollBtn.addEventListener('click', ()=>{
-    if (!isPlayerTurn) return;
+    if(!isPlayerTurn) return;
 
     const dice = Math.floor(Math.random()*6)+1;
-    playerPos = (playerPos + dice) % totalTiles;
-    moveToken(playerToken, playerPos, true);
-    turnIndicator.innerText = "Turn: Computer";
-    isPlayerTurn = false;
+    const target = (playerPos + dice) % totalTiles;
 
-    setTimeout(()=>{
-        const compDice = Math.floor(Math.random()*6)+1;
-        computerPos = (computerPos + compDice) % totalTiles;
-        moveToken(computerToken, computerPos, true);
-        turnIndicator.innerText = "Turn: Player";
-        isPlayerTurn = true;
-    }, 1000);
+    // move player step-by-step (from playerPos -> target)
+    moveTokenSmooth(playerToken, playerPos, target, ()=>{
+        playerPos = target;
+        checkTile(playerToken, playerPos);
+
+        // computer turn after short delay
+        turnIndicator.innerText = 'Turn: Computer';
+        isPlayerTurn = false;
+
+        setTimeout(()=>{
+            const cdice = Math.floor(Math.random()*6)+1;
+            const ctarget = (computerPos + cdice) % totalTiles;
+
+            moveTokenSmooth(computerToken, computerPos, ctarget, ()=>{
+                computerPos = ctarget;
+                checkTile(computerToken, computerPos);
+
+                turnIndicator.innerText = 'Turn: Player';
+                isPlayerTurn = true;
+            });
+        }, 800);
+    });
 });
 
-helpBtn.addEventListener('click', ()=>{
-    helpBox.style.display = helpBox.style.display==='none'?'block':'none';
+/* ---------------------
+   Help button
+   --------------------- */
+helpBtn.addEventListener('click', ()=> {
+    helpBox.style.display = helpBox.style.display === 'none' ? 'block' : 'none';
 });
 
-// Initial placement
-moveToken(playerToken, playerPos, false);
-moveToken(computerToken, computerPos, false);
+/* ---------------------
+   Initial placement
+   --------------------- */
+moveTokenInstant(playerToken, 0);
+moveTokenInstant(computerToken, 0);
+
 </script>
+</body>
+    </html>

@@ -1,3 +1,5 @@
+/* ===== GAME.JS (compatible with index.html above) ===== */
+
 /* ======== State & elements ======== */
 const rollBtn = document.getElementById('rollBtn');
 const helpBtn = document.getElementById('helpBtn');
@@ -9,6 +11,12 @@ const deckChanceEl = document.getElementById('deckChance');
 const deckCommEl = document.getElementById('deckComm');
 const getCardHint = document.getElementById('getCardHint');
 const hintText = document.getElementById('hintText');
+
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalBuy = document.getElementById('modalBuy');
+const modalCancel = document.getElementById('modalCancel');
+const modalPropName = document.getElementById('modalPropName');
+const modalPrice = document.getElementById('modalPrice');
 
 let playerPos = 0, computerPos = 0, totalTiles = 40, isPlayerTurn = true, waitingForCard = false;
 const playerToken = document.getElementById('player'), computerToken = document.getElementById('computer');
@@ -38,6 +46,7 @@ let communityCards = [
 shuffle(chanceCards); shuffle(communityCards);
 
 let getCardAllowed = {chance:false, comm:false};
+let pendingPropertyIndex = null; // for modal
 
 /* ======== Helpers ======== */
 function updateNotification(msg){ notification.innerText = msg; }
@@ -70,31 +79,66 @@ function moveStep(token, current, target, callback){
 }
 function moveTokenSmooth(token, from, to, callback){ moveStep(token, from, to, callback); }
 
+/* ======== Modal (no native confirm) ======== */
+function openBuyModal(tileIndex, propName, price){
+  pendingPropertyIndex = tileIndex;
+  modalPropName.innerText = propName;
+  modalPrice.innerText = '$' + price;
+  modalBackdrop.style.display = 'flex';
+  modalBackdrop.setAttribute('aria-hidden','false');
+}
+function closeBuyModal(){ pendingPropertyIndex = null; modalBackdrop.style.display = 'none'; modalBackdrop.setAttribute('aria-hidden','true'); }
+
+modalCancel.addEventListener('click', ()=>{
+  // player declined
+  closeBuyModal();
+  updateNotification('Player declined to buy');
+  // allow computer to play
+  if(!waitingForCard){ setTimeout(startComputerTurn, 600); }
+});
+modalBuy.addEventListener('click', ()=>{
+  if(pendingPropertyIndex===null){ closeBuyModal(); return; }
+  const t = tiles[pendingPropertyIndex];
+  const price = parseInt(t.dataset.price || 0);
+  if(playerMoney >= price){
+    playerMoney -= price;
+    owners[pendingPropertyIndex] = 'player';
+    t.querySelector('.owner').style.background = 'blue';
+    updateMoneyUI();
+    updateNotification(`Player bought ${t.querySelector('.label')?.innerText || 'property'}`);
+  } else {
+    updateNotification('Not enough money');
+  }
+  closeBuyModal();
+  if(!waitingForCard){ setTimeout(startComputerTurn, 600); }
+});
+
 /* ======== Card UI ======== */
 function showCardForPlayerOrComputer(deck, who, deckEl){
   if(!deck || deck.length===0) return;
   const card = deck.shift(); deck.push(card);
   cardPopup.innerHTML=''; cardPopup.style.top = (board.getBoundingClientRect().bottom + 20) + 'px'; cardPopup.style.display='block';
-
   if(who === 'computer'){
     const back = document.createElement('div'); back.className='card-back'; back.style.background='red'; back.innerHTML='<div style="font-size:16px">NextPoly</div>';
     cardPopup.appendChild(back);
     setTimeout(()=>{ cardPopup.innerHTML=''; const reveal = document.createElement('div'); reveal.className='card-reveal'; reveal.innerHTML=`<div style="font-size:16px;color:red;font-weight:bold;margin-bottom:8px">NextPoly</div><div>${card.text}</div>`; cardPopup.appendChild(reveal);
-      setTimeout(()=>{ card.action('computer'); cardPopup.style.display='none'; checkBankrupt(); computerTurnAfterCard(); },900);
+      setTimeout(()=>{ card.action('computer'); cardPopup.style.display='none'; checkBankrupt(); startComputerTurnAfterCard(); },900);
     },600);
   } else {
     const zoom = document.createElement('div'); zoom.className='card-zoom'; zoom.style.borderColor='blue';
     zoom.innerHTML = `<div style="font-size:16px;color:blue;font-weight:bold;margin-bottom:8px">NextPoly</div><div>${card.text}</div><div style="font-size:12px;margin-top:8px;color:#666">Click card to close and apply</div>`;
     cardPopup.appendChild(zoom);
-    cardPopup.onclick = ()=>{ card.action('player'); cardPopup.style.display='none'; cardPopup.onclick=null; checkBankrupt(); waitingForCard=false; computerTurnAfterCard(); };
+    // player must click to apply — this will resume computer
+    cardPopup.onclick = ()=>{ card.action('player'); cardPopup.style.display='none'; cardPopup.onclick=null; waitingForCard=false; checkBankrupt(); startComputerTurnAfterCard(); };
   }
 }
 
-/* ======== Deck click ======== */
+/* ======== Deck click (player can inspect deck anytime; but can only draw if allowed) ======== */
 deckChanceEl.addEventListener('click', ()=>{
   if(getCardAllowed.chance && waitingForCard){
     getCardAllowed.chance=false; hideGetCardHint(); showCardForPlayerOrComputer(chanceCards,'player',deckChanceEl);
   } else {
+    // quick peek
     const back = document.createElement('div'); back.className='card-back'; back.style.background='blue'; back.innerHTML='<div style="font-size:16px">NextPoly</div>';
     cardPopup.innerHTML=''; cardPopup.appendChild(back); cardPopup.style.top = (board.getBoundingClientRect().bottom + 10) + 'px'; cardPopup.style.display='block'; setTimeout(()=>cardPopup.style.display='none',700);
   }
@@ -110,69 +154,138 @@ deckCommEl.addEventListener('click', ()=>{
 function showGetCardHint(text){ hintText.innerText = text; getCardHint.style.display = 'block'; }
 function hideGetCardHint(){ hintText.innerText=''; getCardHint.style.display='none'; }
 
-/* ======== Tile handling ======== */
+/* ======== Tile handling & mapping ======== */
 function handleTileByIndex(token, index){
+  // reset get-card unless set by tile
   getCardAllowed.chance=false; getCardAllowed.comm=false; hideGetCardHint();
-  waitingForCard=false;
 
-  const tile = tiles[index];
-  const type = tile.dataset.type;
+  switch(index){
+    case 0: handleGO(token); break;
+    case 1: handleProperty(token,1); break;
+    case 2: handleChance(token); break;
+    case 3: handleProperty(token,2); break;
+    case 4: handleTax(token); break;
+    case 5: handleRail(token,1); break;
+    case 6: handleProperty(token,3); break;
+    case 7: handleCommunity(token); break;
+    case 8: handleProperty(token,4); break;
+    case 9: handleJailVisit(token); break;
 
-  switch(type){
-    case 'go': handleGO(token); break;
-    case 'property': handleProperty(token,tile.dataset.prop); break;
-    case 'chance': handleChance(token); break;
-    case 'community': handleCommunity(token); break;
-    case 'tax': handleTax(token); break;
-    case 'rail': handleRail(token,tile.dataset.rail); break;
-    case 'bonus': handleExtraBonus(token); break;
-    case 'jail': handleJailVisit(token); break;
-    case 'gojail': handleGoToJail(token); break;
+    case 10: handleProperty(token,5); break;
+    case 11: handleChance(token); break;
+    case 12: handleProperty(token,6); break;
+    case 13: handleProperty(token,7); break;
+    case 14: handleRail(token,2); break;
+    case 15: handleProperty(token,8); break;
+    case 16: handleCommunity(token); break;
+    case 17: handleProperty(token,9); break;
+    case 18: handleGoToJail(token); break;
+    case 19: handleExtraBonus(token); break;
+
+    case 20: handleFree(token); break;
+    case 21: handleProperty(token,10); break;
+    case 22: handleChance(token); break;
+    case 23: handleProperty(token,11); break;
+    case 24: handleProperty(token,12); break;
+    case 25: handleRail(token,3); break;
+    case 26: handleProperty(token,13); break;
+    case 27: handleProperty(token,14); break;
+    case 28: handleProperty(token,15); break;
+    case 29: handleGO(token); break;
+
+    case 30: handleJailVisit(token); break;
+    case 31: handleProperty(token,16); break;
+    case 32: handleProperty(token,17); break;
+    case 33: handleProperty(token,18); break;
+    case 34: handleRail(token,4); break;
+    case 35: handleProperty(token,19); break;
+    case 36: handleCommunity(token); break;
+    case 37: handleProperty(token,20); break;
+    case 38: handleTax(token); break;
+    case 39: handleExtraBonus(token); break;
+
     default: updateNotification('Unknown tile'); break;
   }
 }
 
 /* ======== Individual handlers ======== */
-function handleGO(token){ const bonus=200; token.id==='player'?playerMoney+=bonus:computerMoney+=bonus; updateMoneyUI(); updateNotification(`${token.id==='player'?'Player':'Computer'} collects $200`); checkBankrupt(); }
+function handleGO(token){
+  const bonus=200;
+  if(token===playerToken){ playerMoney+=bonus; updateMoneyUI(); updateNotification('Player collects $200'); }
+  else { computerMoney+=bonus; updateMoneyUI(); updateNotification('Computer collects $200'); }
+  checkBankrupt();
+}
 function handleProperty(token,propNum){
   const index = findIndexByPropertyNumber(propNum);
   if(index===-1){ updateNotification('Property mapping error'); return; }
+  const tileEl = tiles[index];
+  const price = parseInt(tileEl.dataset.price || 0);
+
   if(!owners[index]){
-    const price = getPriceForProperty(propNum);
-    if(token.id==='player'){
-      if(confirm(`Buy Pro${propNum} for $${price}?`)){
-        if(playerMoney>=price){ playerMoney-=price; owners[index]='player'; tiles[index].style.background='lightblue'; updateMoneyUI(); updateNotification(`Player bought Pro${propNum}`); }
-        else updateNotification('Not enough money');
-      } else updateNotification('Player declined to buy');
+    if(token===playerToken){
+      // open our custom modal (no native confirm)
+      openBuyModal(index, tileEl.querySelector('.label')?.innerText || `Pro${propNum}`, price);
+      // keep computer waiting until modal resolved
+      waitingForCard = false;
     } else {
-      if(computerMoney>=price && computerMoney - price >= 200){ computerMoney-=price; owners[index]='computer'; tiles[index].style.background='lightcoral'; updateMoneyUI(); updateNotification(`Computer bought Pro${propNum}`); }
-      else updateNotification('Computer declined to buy');
+      // simple AI decision
+      if(computerMoney>=price && computerMoney - price >= 200){
+        computerMoney -= price;
+        owners[index] = 'computer';
+        tileEl.querySelector('.owner').style.background = 'red';
+        updateMoneyUI(); updateNotification(`Computer bought ${tileEl.querySelector('.label')?.innerText || 'property'}`);
+      } else {
+        updateNotification('Computer declined to buy');
+      }
     }
-  } else if(owners[index] !== token.id){
-    const rent = Math.max(50, Math.round(getPriceForProperty(propNum)*0.25));
-    token.id==='player'?playerMoney-=rent,computerMoney+=rent:updateNotification(`Computer pays rent $${rent}`); updateMoneyUI(); checkBankrupt();
+  } else if(owners[index] !== (token===playerToken?'player':'computer')){
+    const rent = Math.max(50, Math.round(price*0.25));
+    if(token===playerToken){ playerMoney-=rent; computerMoney+=rent; updateNotification(`Player pays rent $${rent}`); }
+    else { computerMoney-=rent; playerMoney+=rent; updateNotification(`Computer pays rent $${rent}`); }
+    updateMoneyUI(); checkBankrupt();
   } else updateNotification('You own this property');
 }
 function handleChance(token){
-  if(token.id==='player'){ getCardAllowed.chance=true; waitingForCard=true; showGetCardHint('Take your card!'); updateNotification('Landed on Chance — click Chance deck'); }
+  if(token===playerToken){ getCardAllowed.chance=true; waitingForCard=true; showGetCardHint('Take Your Card!'); updateNotification('Landed on Chance — click Chance deck'); }
   else showCardForPlayerOrComputer(chanceCards,'computer',deckChanceEl);
 }
 function handleCommunity(token){
-  if(token.id==='player'){ getCardAllowed.comm=true; waitingForCard=true; showGetCardHint('Take your card!'); updateNotification('Landed on Community — click Community deck'); }
+  if(token===playerToken){ getCardAllowed.comm=true; waitingForCard=true; showGetCardHint('Take Your Card!'); updateNotification('Landed on Community — click Community deck'); }
   else showCardForPlayerOrComputer(communityCards,'computer',deckCommEl);
 }
-function handleTax(token){ const tax=200; token.id==='player'?playerMoney-=tax:computerMoney-=tax; updateMoneyUI(); updateNotification(`${token.id==='player'?'Player':'Computer'} pays tax $${tax}`); checkBankrupt(); }
-function handleRail(token,railNum){ const price=200; const rent=100; const index=findRailIndex(railNum);
-  if(!owners[index]){
-    if(token.id==='player'){ if(confirm(`Buy Rail${railNum} for $${price}?`)){ if(playerMoney>=price){ playerMoney-=price; owners[index]='player'; tiles[index].style.background='lightblue'; updateMoneyUI(); updateNotification(`Player bought Rail${railNum}`);} } }
-    else { if(computerMoney>=price && computerMoney-price>=200){ computerMoney-=price; owners[index]='computer'; tiles[index].style.background='lightcoral'; updateMoneyUI(); updateNotification(`Computer bought Rail${railNum}`); } }
-  } else if(owners[index] !== token.id){ token.id==='player'?playerMoney-=rent,computerMoney+=rent:computerMoney-=rent,playerMoney+=rent; updateMoneyUI(); checkBankrupt(); }
+function handleTax(token){
+  const tax=200;
+  if(token===playerToken){ playerMoney-=tax; updateNotification(`Player pays tax $${tax}`); } else { computerMoney-=tax; updateNotification(`Computer pays tax $${tax}`); }
+  updateMoneyUI(); checkBankrupt();
 }
-function handleExtraBonus(token){ const bonus=100; token.id==='player'?playerMoney+=bonus:computerMoney+=bonus; updateMoneyUI(); updateNotification(`${token.id==='player'?'Player':'Computer'} receives Extra bonus $${bonus}`); checkBankrupt(); }
+function handleRail(token,railNum){
+  const index=findRailIndex(railNum);
+  if(!owners[index]){
+    const price=200;
+    if(token===playerToken){
+      openBuyModal(index, tiles[index].querySelector('.label')?.innerText || `Rail${railNum}`, price);
+    } else {
+      if(computerMoney>=price && computerMoney-price>=200){ computerMoney-=price; owners[index]='computer'; tiles[index].querySelector('.owner').style.background='red'; updateMoneyUI(); updateNotification(`Computer bought Rail${railNum}`); } else updateNotification('Computer declined to buy rail');
+    }
+  } else if(owners[index] !== (token===playerToken?'player':'computer')){
+    const rent=100;
+    if(token===playerToken){ playerMoney-=rent; computerMoney+=rent; updateNotification(`Player pays rail rent $${rent}`);} else { computerMoney-=rent; playerMoney+=rent; updateNotification(`Computer pays rail rent $${rent}`);}
+    updateMoneyUI(); checkBankrupt();
+  } else updateNotification('You own this rail');
+}
+function handleFree(token){ updateNotification('Free Parking — nothing happens'); }
 function handleJailVisit(token){ updateNotification('Jail (visiting) — no penalty'); }
-function handleGoToJail(token){ updateNotification('Go to Jail! Sending to Jail...'); token.id==='player'?playerPos=30:computerPos=30; moveTokenInstant(token,30,false); }
+function handleGoToJail(token){
+  updateNotification('Go to Jail! Sending to Jail...');
+  if(token===playerToken){ playerPos=30; moveTokenInstant(playerToken,30,false); } else { computerPos=30; moveTokenInstant(computerToken,30,false); }
+}
+function handleExtraBonus(token){
+  const bonus=100;
+  if(token===playerToken){ playerMoney+=bonus; updateNotification(`Player receives Extra bonus $${bonus}`); } else { computerMoney+=bonus; updateNotification(`Computer receives Extra bonus $${bonus}`); }
+  updateMoneyUI(); checkBankrupt();
+}
 
-/* ======== Utility ======== */
+/* ======== Utility maps ======== */
 function findIndexByPropertyNumber(n){
   const map={1:1,2:3,3:6,4:8,5:10,6:12,7:13,8:15,9:17,10:21,11:23,12:24,13:26,14:27,15:28,16:31,17:32,18:33,19:35,20:37};
   return map[n] ?? -1;
@@ -192,25 +305,42 @@ rollBtn.addEventListener('click', ()=>{
     playerPos = target;
     handleTileByIndex(playerToken, playerPos);
     if(checkBankrupt()) return;
-    if(!waitingForCard){ isPlayerTurn=false; setTimeout(computerPlayTurn,800); }
+    // if player landed on card and waitingForCard is true, do NOT start computer
+    if(!waitingForCard){
+      isPlayerTurn=false;
+      setTimeout(startComputerTurn,800);
+    } else {
+      // keep turn indicator showing player until they take card
+      turnIndicator.innerText = 'Turn: Player (take card)';
+    }
   });
 });
 
-function computerPlayTurn(){
-  const dice=Math.floor(Math.random()*6)+1; const target=(computerPos+dice)%totalTiles;
-  moveTokenSmooth(computerToken, computerPos, target, ()=>{
-    computerPos=target;
-    handleTileByIndex(computerToken, computerPos);
-    if(!waitingForCard){ turnIndicator.innerText='Turn: Player'; isPlayerTurn=true; }
-  });
+function startComputerTurn(){
+  turnIndicator.innerText='Turn: Computer';
+  isPlayerTurn=false;
+  // small delay then move
+  setTimeout(()=> {
+    const cdice=Math.floor(Math.random()*6)+1;
+    const ctarget=(computerPos+cdice)%totalTiles;
+    moveTokenSmooth(computerToken, computerPos, ctarget, ()=>{
+      computerPos=ctarget;
+      handleTileByIndex(computerToken, computerPos);
+      checkBankrupt();
+      // If computer landed on card that requires player action, it's computer's card so it will reveal immediately.
+      if(!waitingForCard){ turnIndicator.innerText='Turn: Player'; isPlayerTurn=true; }
+    });
+  }, 400);
 }
-
-function computerTurnAfterCard(){
-  if(!waitingForCard){ turnIndicator.innerText='Turn: Computer'; isPlayerTurn=false; setTimeout(computerPlayTurn,400); }
+function startComputerTurnAfterCard(){
+  // called after card reveal
+  if(!waitingForCard){
+    setTimeout(startComputerTurn, 500);
+  }
 }
 
 /* ======== Help ======== */
-helpBtn.addEventListener('click', ()=>{ helpBox.style.display = helpBox.style.display==='none' ? 'block' : 'none'; });
+helpBtn && helpBtn.addEventListener('click', ()=>{ helpBox.style.display = helpBox.style.display==='none' ? 'block' : 'none'; });
 
 /* ======== Init positions ======== */
 moveTokenInstant(playerToken,0,false); moveTokenInstant(computerToken,0,false);

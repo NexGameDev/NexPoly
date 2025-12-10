@@ -1,1131 +1,386 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>Monopoly</title>
-	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
-
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script type="text/javascript" src="classicedition.js"></script>
-	<!-- Comment out the previous line and uncomment the next one to enable the New York City Edition -->
-	<!-- <script type="text/javascript" src="newyorkcityedition.js"></script> -->
-	<script type="text/javascript" src="ai.js"></script>
-	<script type="text/javascript" src="monopoly.js"></script>
-	<link rel="stylesheet" type="text/css" href="styles.css" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>NextPoly - Checked</title>
+<style>
+  body{margin:0;background:#e9e4d8;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px}
+  #board-wrapper{width:500px;height:500px;position:relative;transform-origin:top center}
+  #board{width:500px;height:500px;background:#f4ecd8;border:4px solid #000;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);box-sizing:border-box;position:relative}
+  .tile{border:1px solid #000;background:#fff;display:flex;flex-direction:column;padding:2px;box-sizing:border-box;justify-content:space-between;text-align:center;font-size:11px;position:relative}
+  .price{font-size:10px;font-weight:700}.label{font-size:12px;font-weight:700}
+  .owner{position:absolute;width:100%;height:4px;bottom:0;left:0}
+  #center{grid-row:2/11;grid-column:2/11;display:flex;justify-content:center;align-items:center;font-size:40px;font-weight:700;pointer-events:none;opacity:.2}
+  .token{width:20px;height:20px;border-radius:50%;position:absolute;transition:all .18s linear;z-index:2}
+  #player{background:blue}#computer{background:red}
+  #controls{margin-top:12px;display:flex;gap:10px;align-items:center}
+  button{padding:8px 12px;font-size:14px;cursor:pointer}
+  #info{margin-top:10px;font-weight:700;display:flex;gap:20px;align-items:center}
+  #notification{margin-top:8px;font-weight:700;min-height:18px}
+  #helpBox{display:none;margin-top:10px;border:1px solid #000;padding:10px;background:#fff}
+  .card-popup{position:absolute;display:none;z-index:50;text-align:center;cursor:pointer;left:50%;transform:translateX(-50%)}
+  .card-back{width:140px;height:90px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+  .card-zoom{width:300px;min-height:140px;padding:18px;border-radius:10px;background:#fff;border:6px solid blue;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:20px;z-index:100}
+  .card-reveal{width:260px;min-height:100px;padding:10px;border-radius:8px;background:#fff;border:4px solid red;font-size:18px;z-index:100}
+  #decks{margin-top:10px;display:flex;gap:12px;align-items:center;position:relative}
+  .deck{width:140px;height:90px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;cursor:pointer;user-select:none}
+  .deck.chance{background:blue}.deck.comm{background:red}
+  #getCardHint{display:none;margin-top:6px;font-weight:700;color:#111}
+  @media(max-width:550px){#board-wrapper{transform:scale(.9)}}@media(max-width:480px){#board-wrapper{transform:scale(.8)}}@media(max-width:420px){#board-wrapper{transform:scale(.7)}}@media(max-width:360px){#board-wrapper{transform:scale(.6)}}
+</style>
 </head>
-
 <body>
-	<div id="popupbackground"></div>
-	<div id="popupwrap">
-		<div id="popup">
-			<div style="position: relative;">
-				<!-- <img id="popupclose" src="Images/close.png" title="Close" alt="x" onclick="hide('popupbackground'); hide('popupwrap');" /> -->
-				<div id="popuptext"></div>
-				<div id="popupdrag"></div>
-			</div>
-		</div>
-	</div>
 
-	<div id="statsbackground"></div>
-	<div id="statswrap">
-		<div id="stats">
-			<div style="position: relative;">
-				<img id="statsclose" src="images/close.png" title="Close" alt="x" />
-				<div id="statstext"></div>
-				<div id="statsdrag"></div>
-			</div>
-		</div>
-	</div>
+<div id="board-wrapper">
+  <div id="board">
+    <!-- 40 tiles (0..39) - layout preserved -->
+    <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$60</div><div class="label">Pro1</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$60</div><div class="label">Pro2</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Tax</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Rail1</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$100</div><div class="label">Pro3</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$100</div><div class="label">Pro4</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
 
-	<p id="noscript">
-		Note: This page will not function without JavaScript.
-	</p>
+    <div class="tile"><div class="price">$140</div><div class="label">Pro5</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$140</div><div class="label">Pro6</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$160</div><div class="label">Pro7</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Rail2</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$180</div><div class="label">Pro8</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Pro9</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">GoJ</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$50</div><div class="label">ExtraR</div><div class="owner"></div></div>
 
-	<div id="refresh">
-		Refresh this page to start a new game.
-	</div>
+    <div class="tile"><div class="price">$0</div><div class="label">Free</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$220</div><div class="label">Pro10</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Cha</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$220</div><div class="label">Pro11</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$240</div><div class="label">Pro12</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Rail3</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$260</div><div class="label">Pro13</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$260</div><div class="label">Pro14</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$280</div><div class="label">Pro15</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">GO</div><div class="owner"></div></div>
 
-	<!-- <div id="enlarge"></div> -->
+    <div class="tile"><div class="price">$0</div><div class="label">Jail</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$300</div><div class="label">Pro16</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$300</div><div class="label">Pro17</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$320</div><div class="label">Pro18</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$200</div><div class="label">Rail4</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$350</div><div class="label">Pro19</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Com</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$400</div><div class="label">Pro20</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$0</div><div class="label">Tax</div><div class="owner"></div></div>
+    <div class="tile"><div class="price">$50</div><div class="label">ExtraL</div><div class="owner"></div></div>
 
-	<div id="deed">
-		<div id="deed-normal" style="display: none;">
-			<div id="deed-header">
-				<div style="margin: 5px; font-size: 11px;">T I T L E&nbsp;&nbsp;D E E D</div>
-				<div id="deed-name"></div>
-			</div>
-			<table id="deed-table">
-				<tr>
-					<td colspan="2">
-						RENT&nbsp;$<span id="deed-baserent">12</span>.
-					</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 1 House</td>
-					<td style="text-align: right;">$&nbsp;&nbsp;&nbsp;<span id="deed-rent1">60</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 2 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent2">180</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 3 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent3">500</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 4 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent4">700</span>.</td>
-				</tr>
-				<tr>
-					<td colspan="2">
-						<div style="margin-bottom: 8px;">With HOTEL $<span id="deed-rent5">900</span>.</div>
-						<div>Mortgage Value $<span id="deed-mortgage">80</span>.</div>
-						<div>Houses cost $<span id="deed-houseprice">100</span>. each</div>
-						<div>Hotels, $<span id="deed-hotelprice">100</span>. plus 4 houses</div>
-						<div style="font-size: 9px; font-style: italic; margin-top: 5px;">If a player owns ALL the Lots of any Color-Group, the rent is Doubled on Unimproved Lots in that group.</div>
-					</td>
-				</tr>
-			</table>
-		</div>
+    <div id="center">NextPoly</div>
+    <div id="player" class="token"></div>
+    <div id="computer" class="token"></div>
+  </div>
+</div>
 
-		<div id="deed-mortgaged">
-			<div id="deed-mortgaged-name"></div>
-			<p>&bull;</p>
-			<div>MORTGAGED</div>
-			<div> for $<span id="deed-mortgaged-mortgage">80</span></div>
-			<p>&bull;</p>
-			<div style="font-style: italic; font-size: 13px; margin: 10px;">Card must be turned this side up if property is mortgaged</div>
-		</div>
+<div id="controls">
+  <button id="rollBtn">Roll Dice</button>
+  <button id="helpBtn">?</button>
+</div>
 
-		<div id="deed-special">
-			<div id="deed-special-name"></div>
-			<div id="deed-special-text"></div>
-			<div id="deed-special-footer">
-				Mortgage Value
-				<span style="float: right;">$<span id="deed-special-mortgage">100</span>.</span>
-			</div>
-		</div>
-	</div>
+<div id="info">
+  <div>Blue = Player | Red = Computer</div>
+  <div style="display:flex;gap:10px;margin-left:10px;align-items:center">
+    <div>Player: <span id="moneyP">$1000</span></div>
+    <div>Computer: <span id="moneyC">$1000</span></div>
+  </div>
+</div>
 
-	<table id="board">
-		<tr>
-			<td class="cell board-corner" id="cell20"></td>
-			<td class="cell board-top" id="cell21"></td>
-			<td class="cell board-top" id="cell22"></td>
-			<td class="cell board-top" id="cell23"></td>
-			<td class="cell board-top" id="cell24"></td>
-			<td class="cell board-top" id="cell25"></td>
-			<td class="cell board-top" id="cell26"></td>
-			<td class="cell board-top" id="cell27"></td>
-			<td class="cell board-top" id="cell28"></td>
-			<td class="cell board-top" id="cell29"></td>
-			<td class="cell board-corner" id="cell30"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell19"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell31"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell18"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell32"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell17"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell33"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell16"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell34"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell15"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell35"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell14"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell36"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell13"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell37"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell12"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell38"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell11"></td>
-			<td colspan="9" class="board-center">
-				<div id="jail"></div>
-			</td>
-			<td class="cell board-right" id="cell39"></td>
-		</tr><tr>
-			<td class="cell board-corner" id="cell10"></td>
-			<td class="cell board-bottom" id="cell9"></td>
-			<td class="cell board-bottom" id="cell8"></td>
-			<td class="cell board-bottom" id="cell7"></td>
-			<td class="cell board-bottom" id="cell6"></td>
-			<td class="cell board-bottom" id="cell5"></td>
-			<td class="cell board-bottom" id="cell4"></td>
-			<td class="cell board-bottom" id="cell3"></td>
-			<td class="cell board-bottom" id="cell2"></td>
-			<td class="cell board-bottom" id="cell1"></td>
-			<td class="cell board-corner" id="cell0"></td>
-		</tr>
-	</table>
+<div id="notification"></div>
+<div id="turnIndicator">Turn: Player</div>
+<div id="helpBox">Click "Roll Dice" to roll. Tokens move step-by-step. Blue = Player | Red = Computer.</div>
 
-	<div id="moneybarwrap">
-		<div id="moneybar">
-			<table>
-				<tr id="moneybarrow1" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p1arrow" class="money-bar-arrow" alt=">"/></td>
-					<td id="p1moneybar" class="moneybarcell">
-						<div><span id="p1moneyname" >Player 1</span>:</div>
-						<div>$<span id="p1money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow2" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p2arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p2moneybar" class="moneybarcell">
-						<div><span id="p2moneyname" >Player 2</span>:</div>
-						<div>$<span id="p2money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow3" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p3arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p3moneybar" class="moneybarcell">
-						<div><span id="p3moneyname" >Player 3</span>:</div>
-						<div>$<span id="p3money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow4" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p4arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p4moneybar" class="moneybarcell">
-						<div><span id="p4moneyname" >Player 4</span>:</div>
-						<div>$<span id="p4money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow5" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p5arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p5moneybar" class="moneybarcell">
-						<div><span id="p5moneyname" >Player 5</span>:</div>
-						<div>$<span id="p5money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow6" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p6arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p6moneybar" class="moneybarcell">
-						<div><span id="p6moneyname" >Player 6</span>:</div>
-						<div>$<span id="p6money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow7" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p7arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p7moneybar" class="moneybarcell">
-						<div><span id="p7moneyname" >Player 7</span>:</div>
-						<div>$<span id="p7money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow8" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p8arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p8moneybar" class="moneybarcell">
-						<div><span id="p8moneyname" >Player 8</span>:</div>
-						<div>$<span id="p8money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrowbutton">
-					<td class="moneybararrowcell">&nbsp;</td>
-					<td style="border: none;">
-						<input type="button" id="viewstats" value="View stats" title="View a pop-up window that shows a list of each player's properties." />
-					</td>
-				</tr>
-			</table>
-		</div>
-	</div>
+<div id="decks">
+  <div class="deck chance" id="deckChance">Chance (Blue)</div>
+  <div class="deck comm" id="deckComm">Community (Red)</div>
+</div>
+<div id="getCardHint"><span id="hintText"></span></div>
 
-	<div id="setup">
-		<div style="margin-bottom: 20px;">
-			Select number of players.
-			<select id="playernumber" title="Select the number of players for the game.">
-				<option>2</option>
-				<option>3</option>
-				<option selected="selected">4</option>
-				<option>5</option>
-				<option>6</option>
-				<option>7</option>
-				<option>8</option>
-			</select>
-		</div>
+<div id="cardPopup" class="card-popup"></div>
 
-		<div id="player1input" class="player-input">
-			Player 1: <input type="text" id="player1name" title="Player name" maxlength="16" value="Player 1" />
-			<select id="player1color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option selected="selected" style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player1ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player1name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+<script>
+/* State & elements */
+const rollBtn = document.getElementById('rollBtn');
+const helpBtn = document.getElementById('helpBtn');
+const helpBox = document.getElementById('helpBox');
+const turnIndicator = document.getElementById('turnIndicator');
+const notification = document.getElementById('notification');
+const cardPopup = document.getElementById('cardPopup');
+const deckChanceEl = document.getElementById('deckChance');
+const deckCommEl = document.getElementById('deckComm');
+const getCardHint = document.getElementById('getCardHint');
+const hintText = document.getElementById('hintText');
 
-		<div id="player2input" class="player-input">
-			Player 2: <input type="text" id="player2name" title="Player name" maxlength="16" value="Player 2" />
-			<select id="player2color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option selected="selected" style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player2ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player2name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+let playerPos = 0, computerPos = 0, totalTiles = 40, isPlayerTurn = true;
+const playerToken = document.getElementById('player'), computerToken = document.getElementById('computer');
+const board = document.getElementById('board');
+const tiles = Array.from(document.getElementsByClassName('tile'));
+const tileSize = board.offsetWidth / 11;
 
-		<div id="player3input" class="player-input">
-			Player 3: <input type="text" id="player3name" title="Player name" maxlength="16" value="Player 3" />
-			<select id="player3color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option selected="selected" style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player3ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player3name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+let owners = Array(totalTiles).fill(null);
+let playerMoney = 1000, computerMoney = 1000;
+const moneyP = document.getElementById('moneyP'), moneyC = document.getElementById('moneyC');
+function updateMoneyUI(){ moneyP.innerText = '$'+playerMoney; moneyC.innerText = '$'+computerMoney; }
+updateMoneyUI();
 
-		<div id="player4input" class="player-input">
-			Player 4: <input type="text" id="player4name" title="Player name" maxlength="16" value="Player 4" />
-			<select id="player4color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option selected="selected" style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player4ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player4name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } }
 
-		<div id="player5input" class="player-input">
-			Player 5: <input type="text" id="player5name" title="Player name" maxlength="16" value="Player 5" />
-			<select id="player5color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option selected="selected" style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player5ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player5name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+/* Cards definitions */
+let chanceCards = [
+  {text:'Advance to GO', action:(who)=>{ if(who==='player'){ playerPos=0; moveTokenInstant(playerToken,0,false); updateNotification('Player moves to GO'); } else { computerPos=0; moveTokenInstant(computerToken,0,false); updateNotification('Computer moves to GO'); }}},
+  {text:'Pay $50', action:(who)=>{ if(who==='player'){ playerMoney-=50; updateMoneyUI(); updateNotification('Player pays $50'); } else { computerMoney-=50; updateMoneyUI(); updateNotification('Computer pays $50'); }}},
+  {text:'Receive $100', action:(who)=>{ if(who==='player'){ playerMoney+=100; updateMoneyUI(); updateNotification('Player receives $100'); } else { computerMoney+=100; updateMoneyUI(); updateNotification('Computer receives $100'); }}}
+];
+let communityCards = [
+  {text:'Receive $50', action:(who)=>{ if(who==='player'){ playerMoney+=50; updateMoneyUI(); updateNotification('Player receives $50'); } else { computerMoney+=50; updateMoneyUI(); updateNotification('Computer receives $50'); }}},
+  {text:'Go to Jail', action:(who)=>{ if(who==='player'){ playerPos=30; moveTokenInstant(playerToken,30,false); updateNotification('Player goes to Jail'); } else { computerPos=30; moveTokenInstant(computerToken,30,false); updateNotification('Computer goes to Jail'); }}},
+  {text:'Pay $30', action:(who)=>{ if(who==='player'){ playerMoney-=30; updateMoneyUI(); updateNotification('Player pays $30'); } else { computerMoney-=30; updateMoneyUI(); updateNotification('Computer pays $30'); }}}
+];
+shuffle(chanceCards); shuffle(communityCards);
 
-		<div id="player6input" class="player-input">
-			Player 6: <input type="text" id="player6name" title="Player name" maxlength="16" value="Player 6" />
-			<select id="player6color" title="Player color">
-				<option selected="selected" style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player6ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player6name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+let getCardAllowed = {chance:false, comm:false};
 
-		<div id="player7input" class="player-input">
-			Player 7: <input type="text" id="player7name" title="Player name" maxlength="16" value="Player 7" />
-			<select id="player7color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option selected="selected" style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player7ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player7name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+/* Helpers */
+function updateNotification(msg){ notification.innerText = msg; }
+function checkBankrupt(){
+  if(playerMoney <= 0){ updateNotification('Player bankrupt — Computer wins'); rollBtn.disabled = true; return true; }
+  if(computerMoney <= 0){ updateNotification('Computer bankrupt — Player wins'); rollBtn.disabled = true; return true; }
+  return false;
+}
+function getTilePosition(index){
+  let row=0,col=0;
+  if(index<10){row=0; col=index;}
+  else if(index<19){row=index-9; col=10;}
+  else if(index<29){row=10; col=28-index;}
+  else{row=39-index; col=0;}
+  return {top:row*tileSize, left:col*tileSize};
+}
 
-		<div id="player8input" class="player-input">
-			Player 8: <input type="text" id="player8name" title="Player name" maxlength="16" value="Player 8" />
-			<select id="player8color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option selected="selected" style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player8ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player8name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
+/* Movement (step-by-step) */
+function moveTokenInstant(token, position, triggerTile=true){
+  const pos = getTilePosition(position);
+  token.style.top = pos.top + 'px';
+  token.style.left = pos.left + 'px';
+  if(triggerTile){
+    setTimeout(()=> handleTileByIndex(token,position), 80);
+  }
+}
+function moveStep(token, current, target, callback){
+  if(current === target){ callback(); return; }
+  const next = (current + 1) % totalTiles;
+  moveTokenInstant(token, next, false);
+  setTimeout(()=> moveStep(token, next, target, callback), 120);
+}
+function moveTokenSmooth(token, from, to, callback){ moveStep(token, from, to, callback); }
 
-		<div style="margin: 20px 0px;">
-			<input type="button" value="Start Game" onclick="setup();" title="Begin playing." />
-		</div>
+/* Card UI & actions */
+function showCardForPlayerOrComputer(deck, who, deckEl){
+  if(!deck || deck.length===0) return;
+  const card = deck.shift(); deck.push(card);
+  cardPopup.innerHTML=''; cardPopup.style.top = (board.getBoundingClientRect().bottom + 20) + 'px'; cardPopup.style.display='block';
+  if(who === 'computer'){
+    const back = document.createElement('div'); back.className='card-back'; back.style.background='red'; back.innerHTML='<div style="font-size:16px">NextPoly</div>';
+    cardPopup.appendChild(back);
+    setTimeout(()=>{ cardPopup.innerHTML=''; const reveal = document.createElement('div'); reveal.className='card-reveal'; reveal.innerHTML=`<div style="font-size:16px;color:red;font-weight:bold;margin-bottom:8px">NextPoly</div><div>${card.text}</div>`; cardPopup.appendChild(reveal);
+      setTimeout(()=>{ card.action('computer'); cardPopup.style.display='none'; checkBankrupt(); },900);
+    },600);
+  } else {
+    const zoom = document.createElement('div'); zoom.className='card-zoom'; zoom.style.borderColor='blue';
+    zoom.innerHTML = `<div style="font-size:16px;color:blue;font-weight:bold;margin-bottom:8px">NextPoly</div><div>${card.text}</div><div style="font-size:12px;margin-top:8px;color:#666">Click card to close and apply</div>`;
+    cardPopup.appendChild(zoom);
+    cardPopup.onclick = ()=>{ card.action('player'); cardPopup.style.display='none'; cardPopup.onclick=null; checkBankrupt(); };
+  }
+}
 
-		<div id="noF5">Note: Refreshing this page or navigating away from it may end your game without warning.</div>
-	</div>
+/* Deck click (player can inspect deck anytime; but can only draw if allowed) */
+deckChanceEl.addEventListener('click', ()=>{
+  if(getCardAllowed.chance){
+    getCardAllowed.chance=false; hideGetCardHint(); showCardForPlayerOrComputer(chanceCards,'player',deckChanceEl);
+  } else {
+    const back = document.createElement('div'); back.className='card-back'; back.style.background='blue'; back.innerHTML='<div style="font-size:16px">NextPoly</div>';
+    cardPopup.innerHTML=''; cardPopup.appendChild(back); cardPopup.style.top = (board.getBoundingClientRect().bottom + 10) + 'px'; cardPopup.style.display='block'; setTimeout(()=>cardPopup.style.display='none',700);
+  }
+});
+deckCommEl.addEventListener('click', ()=>{
+  if(getCardAllowed.comm){
+    getCardAllowed.comm=false; hideGetCardHint(); showCardForPlayerOrComputer(communityCards,'player',deckCommEl);
+  } else {
+    const back = document.createElement('div'); back.className='card-back'; back.style.background='red'; back.innerHTML='<div style="font-size:16px">NextPoly</div>';
+    cardPopup.innerHTML=''; cardPopup.appendChild(back); cardPopup.style.top = (board.getBoundingClientRect().bottom + 10) + 'px'; cardPopup.style.display='block'; setTimeout(()=>cardPopup.style.display='none',700);
+  }
+});
+function showGetCardHint(text){ hintText.innerText = text; getCardHint.style.display = 'block'; }
+function hideGetCardHint(){ hintText.innerText=''; getCardHint.style.display='none'; }
 
-	<div id="control">
-		<table>
-			<tr>
-				<td style="text-align: left; vertical-align: top; border: none;">
-					<div id="menu">
-						<table id="menutable" cellspacing="0">
-							<tr>
-								<td class="menu-item" id="buy-menu-item">
+/* Tile handlers mapping (manual) */
+function handleTileByIndex(token, index){
+  // reset get-card unless set by tile
+  getCardAllowed.chance=false; getCardAllowed.comm=false; hideGetCardHint();
 
-									<a href="javascript:void(0);" title="View alerts and buy the property you landed on.">Buy</a>
-								</td>
-								<td class="menu-item" id="manage-menu-item">
+  switch(index){
+    case 0: handleGO(token); break;
+    case 1: handleProperty(token,1); break;
+    case 2: handleChance(token); break;
+    case 3: handleProperty(token,2); break;
+    case 4: handleTax(token); break;
+    case 5: handleRail(token,1); break;
+    case 6: handleProperty(token,3); break;
+    case 7: handleCommunity(token); break;
+    case 8: handleProperty(token,4); break;
+    case 9: handleJailVisit(token); break;
 
-									<a href="javascript:void(0);" title="View, mortgage, and improve your property. ">Manage</a>
-								</td>
-								<td class="menu-item" id="trade-menu-item">
+    case 10: handleProperty(token,5); break;
+    case 11: handleChance(token); break;
+    case 12: handleProperty(token,6); break;
+    case 13: handleProperty(token,7); break;
+    case 14: handleRail(token,2); break;
+    case 15: handleProperty(token,8); break;
+    case 16: handleCommunity(token); break;
+    case 17: handleProperty(token,9); break;
+    case 18: handleGoToJail(token); break;
+    case 19: handleExtraBonus(token); break;
 
-									<a href="javascript:void(0);" title="Exchange property with other players.">Trade</a>
-								</td>
-							</tr>
-						</table>
-					</div>
+    case 20: handleFree(token); break;
+    case 21: handleProperty(token,10); break;
+    case 22: handleChance(token); break;
+    case 23: handleProperty(token,11); break;
+    case 24: handleProperty(token,12); break;
+    case 25: handleRail(token,3); break;
+    case 26: handleProperty(token,13); break;
+    case 27: handleProperty(token,14); break;
+    case 28: handleProperty(token,15); break;
+    case 29: handleGO(token); break;
 
-					<div id="buy">
-						<div id="alert"></div>
-						<div id="landed"></div>
-					</div>
+    case 30: handleJailVisit(token); break;
+    case 31: handleProperty(token,16); break;
+    case 32: handleProperty(token,17); break;
+    case 33: handleProperty(token,18); break;
+    case 34: handleRail(token,4); break;
+    case 35: handleProperty(token,19); break;
+    case 36: handleCommunity(token); break;
+    case 37: handleProperty(token,20); break;
+    case 38: handleTax(token); break;
+    case 39: handleExtraBonus(token); break;
 
-					<div id="manage">
-						<div id="option">
-							<div id="buildings" title="Available buildings"></div>
-							<input type="button" value="Buy house" id="buyhousebutton"/>
-							<input type="button" value="Mortgage" id="mortgagebutton" />
-							<input type="button" value="Sell house" id="sellhousebutton"/>
-						</div>
-						<div id="owned"></div>
-					</div>
-				</td>
-				<td style="vertical-align: top; border: none;">
-					<div id="quickstats" style="">
-							<div><span id="pname" >Player 1</span>:</div>
-							<div><span id="pmoney">$1500</span></div>
-					</div>
-					<div>
-						<div id="die0" title="Die" class="die die-no-img"></div>
-						<div id="die1" title="Die" class="die die-no-img"></div>
-					</div>
+    default: updateNotification('Unknown tile'); break;
+  }
+}
 
-				</td>
-			</tr><tr>
-				<td colspan="2" style="border: none">
-					<div style="padding-top: 8px;">
-						<input type="button" id="nextbutton" title="Roll the dice and move your token accordingly." value="Roll Dice"/>
-						<input type="button" id="resignbutton" title="If you cannot pay your debt then you must resign from the game." value="Resign" onclick="game.resign();" />
-					</div>
-				</td>
-			</tr>
-		</table>
-	</div>
+/* Individual handlers */
+function handleGO(token){
+  const bonus=200;
+  if(token.id==='player'){ playerMoney+=bonus; updateMoneyUI(); updateNotification('Player collects $200'); }
+  else { computerMoney+=bonus; updateMoneyUI(); updateNotification('Computer collects $200'); }
+  checkBankrupt();
+}
+function handleProperty(token,propNum){
+  const index = findIndexByPropertyNumber(propNum);
+  if(index===-1){ updateNotification('Property mapping error'); return; }
+  if(!owners[index]){
+    const price = getPriceForProperty(propNum);
+    if(token.id==='player'){
+      if(confirm(`Buy Pro${propNum} for $${price}?`)){
+        if(playerMoney>=price){ playerMoney-=price; owners[index]='player'; tiles[index].querySelector('.owner').style.background='blue'; updateMoneyUI(); updateNotification(`Player bought Pro${propNum}`); }
+        else updateNotification('Not enough money');
+      } else updateNotification('Player declined to buy');
+    } else {
+      if(computerMoney>=price && computerMoney - price >= 200){ computerMoney-=price; owners[index]='computer'; tiles[index].querySelector('.owner').style.background='red'; updateMoneyUI(); updateNotification(`Computer bought Pro${propNum}`); }
+      else updateNotification('Computer declined to buy');
+    }
+  } else if(owners[index] !== token.id){
+    const rent = Math.max(50, Math.round(getPriceForProperty(propNum)*0.25));
+    if(token.id==='player'){ playerMoney-=rent; computerMoney+=rent; updateNotification(`Player pays rent $${rent}`); }
+    else { computerMoney-=rent; playerMoney+=rent; updateNotification(`Computer pays rent $${rent}`); }
+    updateMoneyUI(); checkBankrupt();
+  } else updateNotification('You own this property');
+}
+function handleChance(token){
+  if(token.id==='player'){ getCardAllowed.chance=true; showGetCardHint('Get a card: Chance (click deck)'); updateNotification('Landed on Chance — click Chance deck'); }
+  else showCardForPlayerOrComputer(chanceCards,'computer',deckChanceEl);
+}
+function handleCommunity(token){
+  if(token.id==='player'){ getCardAllowed.comm=true; showGetCardHint('Get a card: Community (click deck)'); updateNotification('Landed on Community — click Community deck'); }
+  else showCardForPlayerOrComputer(communityCards,'computer',deckCommEl);
+}
+function handleTax(token){
+  const tax=200;
+  if(token.id==='player'){ playerMoney-=tax; updateNotification(`Player pays tax $${tax}`); } else { computerMoney-=tax; updateNotification(`Computer pays tax $${tax}`); }
+  updateMoneyUI(); checkBankrupt();
+}
+function handleRail(token,railNum){
+  const index=findRailIndex(railNum);
+  if(!owners[index]){
+    const price=200;
+    if(token.id==='player'){ if(confirm(`Buy Rail${railNum} for $${price}?`)){ if(playerMoney>=price){ playerMoney-=price; owners[index]='player'; tiles[index].querySelector('.owner').style.background='blue'; updateMoneyUI(); updateNotification(`Player bought Rail${railNum}`);} else updateNotification('Not enough money'); } else updateNotification('Player declined to buy rail'); }
+    else { if(computerMoney>=price && computerMoney-price>=200){ computerMoney-=price; owners[index]='computer'; tiles[index].querySelector('.owner').style.background='red'; updateMoneyUI(); updateNotification(`Computer bought Rail${railNum}`); } else updateNotification('Computer declined to buy rail'); }
+  } else if(owners[index] !== token.id){
+    const rent=100;
+    if(token.id==='player'){ playerMoney-=rent; computerMoney+=rent; updateNotification(`Player pays rail rent $${rent}`);} else { computerMoney-=rent; playerMoney+=rent; updateNotification(`Computer pays rail rent $${rent}`);}
+    updateMoneyUI(); checkBankrupt();
+  } else updateNotification('You own this rail');
+}
+function handleFree(token){ updateNotification('Free Parking — nothing happens'); }
+function handleJailVisit(token){ updateNotification('Jail (visiting) — no penalty'); }
+function handleGoToJail(token){
+  updateNotification('Go to Jail! Sending to Jail...');
+  if(token.id==='player'){ playerPos=30; moveTokenInstant(playerToken,30,false); } else { computerPos=30; moveTokenInstant(computerToken,30,false); }
+}
+function handleExtraBonus(token){
+  const bonus=100; // <- unified bonus for ExtraR & ExtraL
+  if(token.id==='player'){ playerMoney+=bonus; updateNotification(`Player receives Extra bonus $${bonus}`); } else { computerMoney+=bonus; updateNotification(`Computer receives Extra bonus $${bonus}`); }
+  updateMoneyUI(); checkBankrupt();
+}
 
-	<div id="trade">
-		<table style="border-spacing: 3px;">
-			<tr>
-				<td class="trade-cell">
-					<div id="trade-leftp-name"></div>
-				</td>
-				<td class="trade-cell">
-					<div id="trade-rightp-name"></div>
-				</td>
-			</tr>
-			<tr>
-				<td class="trade-cell">
-					$&nbsp;<input id="trade-leftp-money" value="0" title="Enter amount to exchange with the other player." />
-				</td>
-				<td class="trade-cell">
-					$&nbsp;<input id="trade-rightp-money" value="0" title="Enter amount to exchange with the other player." />
-				</td>
-			</tr>
-			<tr>
-				<td id="trade-leftp-property" class="trade-cell"></td>
-				<td id="trade-rightp-property" class="trade-cell"></td>
-			</tr>
-			<tr>
-				<td colspan="2" class="trade-cell">
-					<input type="button" id="proposetradebutton" value="Propose Trade" onclick="game.proposeTrade();" title="Exchange the money and properties that are checked above." />
-					<input type="button" id="canceltradebutton" value="Cancel Trade" onclick='game.cancelTrade();' title="Cancel the trade." />
-					<input type="button" id="accepttradebutton" value="Accept Trade" onclick="game.acceptTrade();" title="Accept the proposed trade." />
-					<input type="button" id="rejecttradebutton" value="Reject Trade" onclick='game.cancelTrade();' title="Reject the proposed trade." />
-				</td>
-			</tr>
-		</table>
-	</div>
+/* Utility maps */
+function findIndexByPropertyNumber(n){
+  const map={1:1,2:3,3:6,4:8,5:10,6:12,7:13,8:15,9:17,10:21,11:23,12:24,13:26,14:27,15:28,16:31,17:32,18:33,19:35,20:37};
+  return map[n] ?? -1;
+}
+function getPriceForProperty(n){
+  const priceMap={1:60,2:60,3:100,4:100,5:140,6:140,7:160,8:180,9:200,10:220,11:220,12:240,13:260,14:260,15:280,16:300,17:300,18:320,19:350,20:400};
+  return priceMap[n] ?? 100;
+}
+function findRailIndex(r){ const map={1:5,2:14,3:25,4:34}; return map[r] ?? -1; }
 
+/* Turn system */
+rollBtn.addEventListener('click', ()=>{
+  if(!isPlayerTurn) return;
+  if(rollBtn.disabled) return;
+  const dice = Math.floor(Math.random()*6)+1;
+  const target = (playerPos + dice) % totalTiles;
+  moveTokenSmooth(playerToken, playerPos, target, ()=>{
+    playerPos = target;
+    handleTileByIndex(playerToken, playerPos);
+    if(checkBankrupt()) return;
+    turnIndicator.innerText='Turn: Computer'; isPlayerTurn=false;
+    setTimeout(()=>{ const cdice=Math.floor(Math.random()*6)+1; const ctarget=(computerPos+cdice)%totalTiles;
+      moveTokenSmooth(computerToken, computerPos, ctarget, ()=>{
+        computerPos=ctarget;
+        handleTileByIndex(computerToken, computerPos);
+        checkBankrupt();
+        turnIndicator.innerText='Turn: Player'; isPlayerTurn=true;
+      });
+    },800);
+  });
+});
+
+/* Help */
+helpBtn.addEventListener('click', ()=>{ helpBox.style.display = helpBox.style.display==='none' ? 'block' : 'none'; });
+
+/* Init pos */
+moveTokenInstant(playerToken,0,false); moveTokenInstant(computerToken,0,false);
+</script>
 </body>
-            </html><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-	<title>Monopoly</title>
-	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
-
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script type="text/javascript" src="classicedition.js"></script>
-	<!-- Comment out the previous line and uncomment the next one to enable the New York City Edition -->
-	<!-- <script type="text/javascript" src="newyorkcityedition.js"></script> -->
-	<script type="text/javascript" src="ai.js"></script>
-	<script type="text/javascript" src="monopoly.js"></script>
-	<link rel="stylesheet" type="text/css" href="styles.css" />
-</head>
-
-<body>
-	<div id="popupbackground"></div>
-	<div id="popupwrap">
-		<div id="popup">
-			<div style="position: relative;">
-				<!-- <img id="popupclose" src="Images/close.png" title="Close" alt="x" onclick="hide('popupbackground'); hide('popupwrap');" /> -->
-				<div id="popuptext"></div>
-				<div id="popupdrag"></div>
-			</div>
-		</div>
-	</div>
-
-	<div id="statsbackground"></div>
-	<div id="statswrap">
-		<div id="stats">
-			<div style="position: relative;">
-				<img id="statsclose" src="images/close.png" title="Close" alt="x" />
-				<div id="statstext"></div>
-				<div id="statsdrag"></div>
-			</div>
-		</div>
-	</div>
-
-	<p id="noscript">
-		Note: This page will not function without JavaScript.
-	</p>
-
-	<div id="refresh">
-		Refresh this page to start a new game.
-	</div>
-
-	<!-- <div id="enlarge"></div> -->
-
-	<div id="deed">
-		<div id="deed-normal" style="display: none;">
-			<div id="deed-header">
-				<div style="margin: 5px; font-size: 11px;">T I T L E&nbsp;&nbsp;D E E D</div>
-				<div id="deed-name"></div>
-			</div>
-			<table id="deed-table">
-				<tr>
-					<td colspan="2">
-						RENT&nbsp;$<span id="deed-baserent">12</span>.
-					</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 1 House</td>
-					<td style="text-align: right;">$&nbsp;&nbsp;&nbsp;<span id="deed-rent1">60</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 2 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent2">180</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 3 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent3">500</span>.</td>
-				</tr>
-				<tr>
-					<td style="text-align: left;">With 4 Houses</td>
-					<td style="text-align: right;"><span id="deed-rent4">700</span>.</td>
-				</tr>
-				<tr>
-					<td colspan="2">
-						<div style="margin-bottom: 8px;">With HOTEL $<span id="deed-rent5">900</span>.</div>
-						<div>Mortgage Value $<span id="deed-mortgage">80</span>.</div>
-						<div>Houses cost $<span id="deed-houseprice">100</span>. each</div>
-						<div>Hotels, $<span id="deed-hotelprice">100</span>. plus 4 houses</div>
-						<div style="font-size: 9px; font-style: italic; margin-top: 5px;">If a player owns ALL the Lots of any Color-Group, the rent is Doubled on Unimproved Lots in that group.</div>
-					</td>
-				</tr>
-			</table>
-		</div>
-
-		<div id="deed-mortgaged">
-			<div id="deed-mortgaged-name"></div>
-			<p>&bull;</p>
-			<div>MORTGAGED</div>
-			<div> for $<span id="deed-mortgaged-mortgage">80</span></div>
-			<p>&bull;</p>
-			<div style="font-style: italic; font-size: 13px; margin: 10px;">Card must be turned this side up if property is mortgaged</div>
-		</div>
-
-		<div id="deed-special">
-			<div id="deed-special-name"></div>
-			<div id="deed-special-text"></div>
-			<div id="deed-special-footer">
-				Mortgage Value
-				<span style="float: right;">$<span id="deed-special-mortgage">100</span>.</span>
-			</div>
-		</div>
-	</div>
-
-	<table id="board">
-		<tr>
-			<td class="cell board-corner" id="cell20"></td>
-			<td class="cell board-top" id="cell21"></td>
-			<td class="cell board-top" id="cell22"></td>
-			<td class="cell board-top" id="cell23"></td>
-			<td class="cell board-top" id="cell24"></td>
-			<td class="cell board-top" id="cell25"></td>
-			<td class="cell board-top" id="cell26"></td>
-			<td class="cell board-top" id="cell27"></td>
-			<td class="cell board-top" id="cell28"></td>
-			<td class="cell board-top" id="cell29"></td>
-			<td class="cell board-corner" id="cell30"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell19"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell31"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell18"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell32"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell17"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell33"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell16"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell34"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell15"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell35"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell14"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell36"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell13"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell37"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell12"></td>
-			<td colspan="9" class="board-center"></td>
-			<td class="cell board-right" id="cell38"></td>
-		</tr><tr>
-			<td class="cell board-left" id="cell11"></td>
-			<td colspan="9" class="board-center">
-				<div id="jail"></div>
-			</td>
-			<td class="cell board-right" id="cell39"></td>
-		</tr><tr>
-			<td class="cell board-corner" id="cell10"></td>
-			<td class="cell board-bottom" id="cell9"></td>
-			<td class="cell board-bottom" id="cell8"></td>
-			<td class="cell board-bottom" id="cell7"></td>
-			<td class="cell board-bottom" id="cell6"></td>
-			<td class="cell board-bottom" id="cell5"></td>
-			<td class="cell board-bottom" id="cell4"></td>
-			<td class="cell board-bottom" id="cell3"></td>
-			<td class="cell board-bottom" id="cell2"></td>
-			<td class="cell board-bottom" id="cell1"></td>
-			<td class="cell board-corner" id="cell0"></td>
-		</tr>
-	</table>
-
-	<div id="moneybarwrap">
-		<div id="moneybar">
-			<table>
-				<tr id="moneybarrow1" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p1arrow" class="money-bar-arrow" alt=">"/></td>
-					<td id="p1moneybar" class="moneybarcell">
-						<div><span id="p1moneyname" >Player 1</span>:</div>
-						<div>$<span id="p1money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow2" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p2arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p2moneybar" class="moneybarcell">
-						<div><span id="p2moneyname" >Player 2</span>:</div>
-						<div>$<span id="p2money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow3" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p3arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p3moneybar" class="moneybarcell">
-						<div><span id="p3moneyname" >Player 3</span>:</div>
-						<div>$<span id="p3money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow4" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p4arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p4moneybar" class="moneybarcell">
-						<div><span id="p4moneyname" >Player 4</span>:</div>
-						<div>$<span id="p4money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow5" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p5arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p5moneybar" class="moneybarcell">
-						<div><span id="p5moneyname" >Player 5</span>:</div>
-						<div>$<span id="p5money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow6" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p6arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p6moneybar" class="moneybarcell">
-						<div><span id="p6moneyname" >Player 6</span>:</div>
-						<div>$<span id="p6money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow7" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p7arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p7moneybar" class="moneybarcell">
-						<div><span id="p7moneyname" >Player 7</span>:</div>
-						<div>$<span id="p7money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrow8" class="money-bar-row">
-					<td class="moneybararrowcell"><img src="images/arrow.png" id="p8arrow" class="money-bar-arrow" alt=">" /></td>
-					<td id="p8moneybar" class="moneybarcell">
-						<div><span id="p8moneyname" >Player 8</span>:</div>
-						<div>$<span id="p8money">1500</span></div>
-					</td>
-				</tr>
-				<tr id="moneybarrowbutton">
-					<td class="moneybararrowcell">&nbsp;</td>
-					<td style="border: none;">
-						<input type="button" id="viewstats" value="View stats" title="View a pop-up window that shows a list of each player's properties." />
-					</td>
-				</tr>
-			</table>
-		</div>
-	</div>
-
-	<div id="setup">
-		<div style="margin-bottom: 20px;">
-			Select number of players.
-			<select id="playernumber" title="Select the number of players for the game.">
-				<option>2</option>
-				<option>3</option>
-				<option selected="selected">4</option>
-				<option>5</option>
-				<option>6</option>
-				<option>7</option>
-				<option>8</option>
-			</select>
-		</div>
-
-		<div id="player1input" class="player-input">
-			Player 1: <input type="text" id="player1name" title="Player name" maxlength="16" value="Player 1" />
-			<select id="player1color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option selected="selected" style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player1ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player1name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player2input" class="player-input">
-			Player 2: <input type="text" id="player2name" title="Player name" maxlength="16" value="Player 2" />
-			<select id="player2color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option selected="selected" style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player2ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player2name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player3input" class="player-input">
-			Player 3: <input type="text" id="player3name" title="Player name" maxlength="16" value="Player 3" />
-			<select id="player3color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option selected="selected" style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player3ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player3name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player4input" class="player-input">
-			Player 4: <input type="text" id="player4name" title="Player name" maxlength="16" value="Player 4" />
-			<select id="player4color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option selected="selected" style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player4ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player4name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player5input" class="player-input">
-			Player 5: <input type="text" id="player5name" title="Player name" maxlength="16" value="Player 5" />
-			<select id="player5color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option selected="selected" style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player5ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player5name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player6input" class="player-input">
-			Player 6: <input type="text" id="player6name" title="Player name" maxlength="16" value="Player 6" />
-			<select id="player6color" title="Player color">
-				<option selected="selected" style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player6ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player6name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player7input" class="player-input">
-			Player 7: <input type="text" id="player7name" title="Player name" maxlength="16" value="Player 7" />
-			<select id="player7color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option selected="selected" style="color: orange;">Orange</option>
-				<option style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player7ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player7name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div id="player8input" class="player-input">
-			Player 8: <input type="text" id="player8name" title="Player name" maxlength="16" value="Player 8" />
-			<select id="player8color" title="Player color">
-				<option style="color: aqua;">Aqua</option>
-				<option style="color: black;">Black</option>
-				<option style="color: blue;">Blue</option>
-				<option style="color: fuchsia;">Fuchsia</option>
-				<option style="color: gray;">Gray</option>
-				<option style="color: green;">Green</option>
-				<option style="color: lime;">Lime</option>
-				<option style="color: maroon;">Maroon</option>
-				<option style="color: navy;">Navy</option>
-				<option style="color: olive;">Olive</option>
-				<option style="color: orange;">Orange</option>
-				<option selected="selected" style="color: purple;">Purple</option>
-				<option style="color: red;">Red</option>
-				<option style="color: silver;">Silver</option>
-				<option style="color: teal;">Teal</option>
-				<option style="color: yellow;">Yellow</option>
-			</select>
-			<select id="player8ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player8name').disabled = this.value !== '0';">
-				<option value="0" selected="selected">Human</option>
-				<option value="1">AI (Test)</option>
-			</select>
-		</div>
-
-		<div style="margin: 20px 0px;">
-			<input type="button" value="Start Game" onclick="setup();" title="Begin playing." />
-		</div>
-
-		<div id="noF5">Note: Refreshing this page or navigating away from it may end your game without warning.</div>
-	</div>
-
-	<div id="control">
-		<table>
-			<tr>
-				<td style="text-align: left; vertical-align: top; border: none;">
-					<div id="menu">
-						<table id="menutable" cellspacing="0">
-							<tr>
-								<td class="menu-item" id="buy-menu-item">
-
-									<a href="javascript:void(0);" title="View alerts and buy the property you landed on.">Buy</a>
-								</td>
-								<td class="menu-item" id="manage-menu-item">
-
-									<a href="javascript:void(0);" title="View, mortgage, and improve your property. ">Manage</a>
-								</td>
-								<td class="menu-item" id="trade-menu-item">
-
-									<a href="javascript:void(0);" title="Exchange property with other players.">Trade</a>
-								</td>
-							</tr>
-						</table>
-					</div>
-
-					<div id="buy">
-						<div id="alert"></div>
-						<div id="landed"></div>
-					</div>
-
-					<div id="manage">
-						<div id="option">
-							<div id="buildings" title="Available buildings"></div>
-							<input type="button" value="Buy house" id="buyhousebutton"/>
-							<input type="button" value="Mortgage" id="mortgagebutton" />
-							<input type="button" value="Sell house" id="sellhousebutton"/>
-						</div>
-						<div id="owned"></div>
-					</div>
-				</td>
-				<td style="vertical-align: top; border: none;">
-					<div id="quickstats" style="">
-							<div><span id="pname" >Player 1</span>:</div>
-							<div><span id="pmoney">$1500</span></div>
-					</div>
-					<div>
-						<div id="die0" title="Die" class="die die-no-img"></div>
-						<div id="die1" title="Die" class="die die-no-img"></div>
-					</div>
-
-				</td>
-			</tr><tr>
-				<td colspan="2" style="border: none">
-					<div style="padding-top: 8px;">
-						<input type="button" id="nextbutton" title="Roll the dice and move your token accordingly." value="Roll Dice"/>
-						<input type="button" id="resignbutton" title="If you cannot pay your debt then you must resign from the game." value="Resign" onclick="game.resign();" />
-					</div>
-				</td>
-			</tr>
-		</table>
-	</div>
-
-	<div id="trade">
-		<table style="border-spacing: 3px;">
-			<tr>
-				<td class="trade-cell">
-					<div id="trade-leftp-name"></div>
-				</td>
-				<td class="trade-cell">
-					<div id="trade-rightp-name"></div>
-				</td>
-			</tr>
-			<tr>
-				<td class="trade-cell">
-					$&nbsp;<input id="trade-leftp-money" value="0" title="Enter amount to exchange with the other player." />
-				</td>
-				<td class="trade-cell">
-					$&nbsp;<input id="trade-rightp-money" value="0" title="Enter amount to exchange with the other player." />
-				</td>
-			</tr>
-			<tr>
-				<td id="trade-leftp-property" class="trade-cell"></td>
-				<td id="trade-rightp-property" class="trade-cell"></td>
-			</tr>
-			<tr>
-				<td colspan="2" class="trade-cell">
-					<input type="button" id="proposetradebutton" value="Propose Trade" onclick="game.proposeTrade();" title="Exchange the money and properties that are checked above." />
-					<input type="button" id="canceltradebutton" value="Cancel Trade" onclick='game.cancelTrade();' title="Cancel the trade." />
-					<input type="button" id="accepttradebutton" value="Accept Trade" onclick="game.acceptTrade();" title="Accept the proposed trade." />
-					<input type="button" id="rejecttradebutton" value="Reject Trade" onclick='game.cancelTrade();' title="Reject the proposed trade." />
-				</td>
-			</tr>
-		</table>
-	</div>
-
-</body>
-  </html>
+													   </html>

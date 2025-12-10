@@ -1,750 +1,1131 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>NextPoly - Simple Monopoly Clone</title>
-<style>
-  :root{
-    --bg:#e9e4d8;
-    --board-bg:#ffffff;
-    --tile-size:80px;
-    --board-size:9; /* 9x9 grid visual (outer ring) */
-  }
-  body{
-    margin:0;
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background:var(--bg);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:16px;
-    gap:16px;
-    color:#111;
-  }
+	<title>Monopoly</title>
+	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
 
-  .container{
-    display:flex;
-    gap:20px;
-    align-items:flex-start;
-  }
-
-  /* Board wrapper */
-  .board-wrapper{
-    width: calc(var(--tile-size) * (var(--board-size) + 1));
-    background:var(--board-bg);
-    padding:12px;
-    border-radius:12px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.08);
-    display:grid;
-    grid-template-columns: repeat(11, var(--tile-size));
-    grid-template-rows: repeat(11, var(--tile-size));
-    position:relative;
-  }
-
-  /* Tile */
-  .tile{
-    box-sizing:border-box;
-    border:1px solid #ddd;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    font-size:11px;
-    padding:6px;
-    background:linear-gradient(180deg,#fff,#f7f7f8);
-    cursor:pointer;
-    user-select:none;
-    position:relative;
-  }
-  .tile.property .title{font-weight:700;font-size:11px}
-  .tile .tag{position:absolute;left:4px;top:4px;font-size:10px;padding:2px 4px;border-radius:6px;background:rgba(0,0,0,0.06)}
-  .tile.owned-player{outline:3px solid rgba(35,120,255,0.35)}
-  .tile.owned-computer{outline:3px solid rgba(220,40,40,0.35)}
-
-  /* center (info panel) */
-  .center-panel{
-    width:320px;
-    padding:12px;
-    border-radius:10px;
-    background:#fff;
-    box-shadow:0 6px 18px rgba(0,0,0,0.06);
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-
-  .players{
-    display:flex;
-    gap:8px;
-    justify-content:space-between;
-  }
-  .player-card{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    padding:8px;
-    border-radius:8px;
-    background:#f6f7fb;
-  }
-  .token{
-    width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;
-  }
-  .token.player{background:#1e6fff}
-  .token.computer{background:#d63434}
-
-  .controls{display:flex;gap:8px;align-items:center;justify-content:center;padding:8px}
-  button{padding:8px 12px;border-radius:8px;border:0;background:#222;color:#fff;cursor:pointer}
-  button.secondary{background:#666}
-
-  /* tokens on board */
-  .marker{
-    width:18px;height:18px;border-radius:4px;position:absolute;z-index:5;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:10px;
-    transform:translate(-50%,-50%);
-    box-shadow:0 2px 6px rgba(0,0,0,0.2);
-  }
-  .marker.player{background:#1e6fff}
-  .marker.computer{background:#d63434}
-
-  /* card area */
-  .cards-area{
-    margin-top:12px;
-    display:flex;
-    gap:8px;
-    align-items:center;
-  }
-  .deck{
-    width:120px;height:70px;border-radius:8px;background:#f3f3f3;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;cursor:pointer;
-    position:relative;overflow:hidden;
-  }
-  .deck .back{font-weight:700}
-  .deck.player{background:linear-gradient(135deg,#e6f0ff,#cfe0ff);border:2px solid #bfe0ff}
-  .deck.computer{background:linear-gradient(135deg,#ffdfe0,#ffcfcf);border:2px solid #ffbebe}
-
-  /* modal */
-  .modal{
-    position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:40;
-  }
-  .modal.open{display:flex}
-  .card-modal{
-    width:400px;max-width:90%;background:#fff;padding:18px;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.3);
-  }
-  .card-modal h3{margin:0 0 8px 0}
-  .notice{font-size:13px;color:#444}
-
-  /* info area under board */
-  .log{margin-top:12px;background:#fff;padding:10px;border-radius:8px;max-width:900px;min-width:300px;height:120px;overflow:auto;border:1px solid #eee}
-  .log p{margin:4px 0;font-size:13px}
-
-  /* small screens */
-  @media (max-width:900px){
-    .container{flex-direction:column;align-items:center}
-    .board-wrapper{transform:scale(0.85)}
-  }
-</style>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script type="text/javascript" src="classicedition.js"></script>
+	<!-- Comment out the previous line and uncomment the next one to enable the New York City Edition -->
+	<!-- <script type="text/javascript" src="newyorkcityedition.js"></script> -->
+	<script type="text/javascript" src="ai.js"></script>
+	<script type="text/javascript" src="monopoly.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
 </head>
+
 <body>
+	<div id="popupbackground"></div>
+	<div id="popupwrap">
+		<div id="popup">
+			<div style="position: relative;">
+				<!-- <img id="popupclose" src="Images/close.png" title="Close" alt="x" onclick="hide('popupbackground'); hide('popupwrap');" /> -->
+				<div id="popuptext"></div>
+				<div id="popupdrag"></div>
+			</div>
+		</div>
+	</div>
 
-<h2 style="margin:0">NextPoly — Simple Monopoly (Demo)</h2>
-<div class="container">
-  <div id="board" class="board-wrapper" aria-label="board"></div>
+	<div id="statsbackground"></div>
+	<div id="statswrap">
+		<div id="stats">
+			<div style="position: relative;">
+				<img id="statsclose" src="images/close.png" title="Close" alt="x" />
+				<div id="statstext"></div>
+				<div id="statsdrag"></div>
+			</div>
+		</div>
+	</div>
 
-  <div class="center-panel">
-    <div class="players">
-      <div class="player-card">
-        <div class="token player">P</div>
-        <div>
-          <div style="font-weight:700">Pemain</div>
-          <div id="player-balance">Rp 1000</div>
-        </div>
-      </div>
-      <div class="player-card">
-        <div class="token computer">C</div>
-        <div>
-          <div style="font-weight:700">Komputer</div>
-          <div id="computer-balance">Rp 1000</div>
-        </div>
-      </div>
-    </div>
+	<p id="noscript">
+		Note: This page will not function without JavaScript.
+	</p>
 
-    <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-      <div style="display:flex;gap:8px;align-items:center;justify-content:center">
-        <button id="rollBtn">Roll Dice</button>
-        <button id="endTurnBtn" class="secondary">End Turn</button>
-      </div>
-      <div style="text-align:center;color:#666;font-size:13px">Giliran: <span id="turnText">Pemain</span></div>
-    </div>
+	<div id="refresh">
+		Refresh this page to start a new game.
+	</div>
 
-    <div class="cards-area">
-      <div class="deck player" id="player-deck" title="Klik untuk lihat jumlah kartu pemain">
-        <div class="back">Chance (biru)</div>
-      </div>
-      <div class="deck computer" id="computer-deck" title="Klik untuk lihat jumlah kartu komputer">
-        <div class="back">Community (merah)</div>
-      </div>
-    </div>
+	<!-- <div id="enlarge"></div> -->
 
-    <div style="margin-top:10px">
-      <div style="font-weight:700;margin-bottom:6px">Aksi</div>
-      <div id="actionArea" style="min-height:60px;padding:8px;background:#f6f7fb;border-radius:8px">Belum ada aksi.</div>
-    </div>
-  </div>
-</div>
+	<div id="deed">
+		<div id="deed-normal" style="display: none;">
+			<div id="deed-header">
+				<div style="margin: 5px; font-size: 11px;">T I T L E&nbsp;&nbsp;D E E D</div>
+				<div id="deed-name"></div>
+			</div>
+			<table id="deed-table">
+				<tr>
+					<td colspan="2">
+						RENT&nbsp;$<span id="deed-baserent">12</span>.
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 1 House</td>
+					<td style="text-align: right;">$&nbsp;&nbsp;&nbsp;<span id="deed-rent1">60</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 2 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent2">180</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 3 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent3">500</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 4 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent4">700</span>.</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<div style="margin-bottom: 8px;">With HOTEL $<span id="deed-rent5">900</span>.</div>
+						<div>Mortgage Value $<span id="deed-mortgage">80</span>.</div>
+						<div>Houses cost $<span id="deed-houseprice">100</span>. each</div>
+						<div>Hotels, $<span id="deed-hotelprice">100</span>. plus 4 houses</div>
+						<div style="font-size: 9px; font-style: italic; margin-top: 5px;">If a player owns ALL the Lots of any Color-Group, the rent is Doubled on Unimproved Lots in that group.</div>
+					</td>
+				</tr>
+			</table>
+		</div>
 
-<div class="log" id="log"></div>
+		<div id="deed-mortgaged">
+			<div id="deed-mortgaged-name"></div>
+			<p>&bull;</p>
+			<div>MORTGAGED</div>
+			<div> for $<span id="deed-mortgaged-mortgage">80</span></div>
+			<p>&bull;</p>
+			<div style="font-style: italic; font-size: 13px; margin: 10px;">Card must be turned this side up if property is mortgaged</div>
+		</div>
 
-<!-- markers -->
-<div id="marker-player" class="marker player" style="display:none">P</div>
-<div id="marker-computer" class="marker computer" style="display:none">C</div>
+		<div id="deed-special">
+			<div id="deed-special-name"></div>
+			<div id="deed-special-text"></div>
+			<div id="deed-special-footer">
+				Mortgage Value
+				<span style="float: right;">$<span id="deed-special-mortgage">100</span>.</span>
+			</div>
+		</div>
+	</div>
 
-<!-- modal for cards / property -->
-<div id="modal" class="modal" aria-hidden="true">
-  <div class="card-modal" id="modalContent">
-    <h3 id="modalTitle">Title</h3>
-    <div id="modalBody" class="notice">Body</div>
-    <div style="text-align:right;margin-top:12px">
-      <button id="modalOk">OK</button>
-    </div>
-  </div>
-</div>
+	<table id="board">
+		<tr>
+			<td class="cell board-corner" id="cell20"></td>
+			<td class="cell board-top" id="cell21"></td>
+			<td class="cell board-top" id="cell22"></td>
+			<td class="cell board-top" id="cell23"></td>
+			<td class="cell board-top" id="cell24"></td>
+			<td class="cell board-top" id="cell25"></td>
+			<td class="cell board-top" id="cell26"></td>
+			<td class="cell board-top" id="cell27"></td>
+			<td class="cell board-top" id="cell28"></td>
+			<td class="cell board-top" id="cell29"></td>
+			<td class="cell board-corner" id="cell30"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell19"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell31"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell18"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell32"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell17"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell33"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell16"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell34"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell15"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell35"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell14"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell36"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell13"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell37"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell12"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell38"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell11"></td>
+			<td colspan="9" class="board-center">
+				<div id="jail"></div>
+			</td>
+			<td class="cell board-right" id="cell39"></td>
+		</tr><tr>
+			<td class="cell board-corner" id="cell10"></td>
+			<td class="cell board-bottom" id="cell9"></td>
+			<td class="cell board-bottom" id="cell8"></td>
+			<td class="cell board-bottom" id="cell7"></td>
+			<td class="cell board-bottom" id="cell6"></td>
+			<td class="cell board-bottom" id="cell5"></td>
+			<td class="cell board-bottom" id="cell4"></td>
+			<td class="cell board-bottom" id="cell3"></td>
+			<td class="cell board-bottom" id="cell2"></td>
+			<td class="cell board-bottom" id="cell1"></td>
+			<td class="cell board-corner" id="cell0"></td>
+		</tr>
+	</table>
 
-<script>
-/*
-  NextPoly — simplified, single-file monopoly-like demo
-  Features implemented:
-    - Board with 40 tiles (array)
-    - Each tile has type and proper data
-    - Click any tile to inspect and trigger correct option
-    - Roll dice to move token (step-by-step animation)
-    - Chance and Community decks (cards displayed enlarged for player)
-    - Ownership marking (player blue, computer red)
-    - Initial balances 1000 each
-*/
+	<div id="moneybarwrap">
+		<div id="moneybar">
+			<table>
+				<tr id="moneybarrow1" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p1arrow" class="money-bar-arrow" alt=">"/></td>
+					<td id="p1moneybar" class="moneybarcell">
+						<div><span id="p1moneyname" >Player 1</span>:</div>
+						<div>$<span id="p1money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow2" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p2arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p2moneybar" class="moneybarcell">
+						<div><span id="p2moneyname" >Player 2</span>:</div>
+						<div>$<span id="p2money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow3" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p3arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p3moneybar" class="moneybarcell">
+						<div><span id="p3moneyname" >Player 3</span>:</div>
+						<div>$<span id="p3money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow4" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p4arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p4moneybar" class="moneybarcell">
+						<div><span id="p4moneyname" >Player 4</span>:</div>
+						<div>$<span id="p4money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow5" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p5arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p5moneybar" class="moneybarcell">
+						<div><span id="p5moneyname" >Player 5</span>:</div>
+						<div>$<span id="p5money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow6" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p6arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p6moneybar" class="moneybarcell">
+						<div><span id="p6moneyname" >Player 6</span>:</div>
+						<div>$<span id="p6money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow7" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p7arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p7moneybar" class="moneybarcell">
+						<div><span id="p7moneyname" >Player 7</span>:</div>
+						<div>$<span id="p7money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow8" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p8arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p8moneybar" class="moneybarcell">
+						<div><span id="p8moneyname" >Player 8</span>:</div>
+						<div>$<span id="p8money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrowbutton">
+					<td class="moneybararrowcell">&nbsp;</td>
+					<td style="border: none;">
+						<input type="button" id="viewstats" value="View stats" title="View a pop-up window that shows a list of each player's properties." />
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
 
-const INITIAL_MONEY = 1000;
-let state = {
-  player: {pos:0, money: INITIAL_MONEY, owned: []},
-  computer: {pos:0, money: INITIAL_MONEY, owned: []},
-  currentTurn: 'player', // 'player' or 'computer'
-  tiles: [],
-  chanceDeck: [],
-  communityDeck: []
-};
+	<div id="setup">
+		<div style="margin-bottom: 20px;">
+			Select number of players.
+			<select id="playernumber" title="Select the number of players for the game.">
+				<option>2</option>
+				<option>3</option>
+				<option selected="selected">4</option>
+				<option>5</option>
+				<option>6</option>
+				<option>7</option>
+				<option>8</option>
+			</select>
+		</div>
 
-const boardEl = document.getElementById('board');
-const logEl = document.getElementById('log');
-const playerBalanceEl = document.getElementById('player-balance');
-const computerBalanceEl = document.getElementById('computer-balance');
-const turnTextEl = document.getElementById('turnText');
-const actionArea = document.getElementById('actionArea');
+		<div id="player1input" class="player-input">
+			Player 1: <input type="text" id="player1name" title="Player name" maxlength="16" value="Player 1" />
+			<select id="player1color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option selected="selected" style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player1ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player1name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-const markerPlayer = document.getElementById('marker-player');
-const markerComputer = document.getElementById('marker-computer');
+		<div id="player2input" class="player-input">
+			Player 2: <input type="text" id="player2name" title="Player name" maxlength="16" value="Player 2" />
+			<select id="player2color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option selected="selected" style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player2ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player2name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-const modal = document.getElementById('modal');
-const modalTitle = document.getElementById('modalTitle');
-const modalBody = document.getElementById('modalBody');
-const modalOk = document.getElementById('modalOk');
+		<div id="player3input" class="player-input">
+			Player 3: <input type="text" id="player3name" title="Player name" maxlength="16" value="Player 3" />
+			<select id="player3color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option selected="selected" style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player3ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player3name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-document.getElementById('rollBtn').addEventListener('click', async ()=> {
-  if(state.currentTurn !== 'player'){ log('Sekarang bukan giliranmu.'); return; }
-  await playerRoll();
-});
-document.getElementById('endTurnBtn').addEventListener('click', ()=> {
-  if(state.currentTurn !== 'player'){ log('Bukan giliranmu.'); return; }
-  endTurn();
-});
-document.getElementById('player-deck').addEventListener('click', ()=> {
-  showModal('Info Kartu', `Sisa kartu Chance: ${state.chanceDeck.length}`);
-});
-document.getElementById('computer-deck').addEventListener('click', ()=> {
-  showModal('Info Kartu', `Sisa kartu Community: ${state.communityDeck.length}`);
-});
+		<div id="player4input" class="player-input">
+			Player 4: <input type="text" id="player4name" title="Player name" maxlength="16" value="Player 4" />
+			<select id="player4color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option selected="selected" style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player4ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player4name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-modalOk.addEventListener('click', ()=> closeModal());
+		<div id="player5input" class="player-input">
+			Player 5: <input type="text" id="player5name" title="Player name" maxlength="16" value="Player 5" />
+			<select id="player5color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option selected="selected" style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player5ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player5name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-function showModal(title, body){
-  modalTitle.textContent = title;
-  modalBody.textContent = body;
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden','false');
-}
-function closeModal(){
-  modal.classList.remove('open');
-  modal.setAttribute('aria-hidden','true');
-}
+		<div id="player6input" class="player-input">
+			Player 6: <input type="text" id="player6name" title="Player name" maxlength="16" value="Player 6" />
+			<select id="player6color" title="Player color">
+				<option selected="selected" style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player6ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player6name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-/* Utilities */
-function log(msg){
-  const p = document.createElement('p');
-  p.textContent = `${new Date().toLocaleTimeString()} — ${msg}`;
-  logEl.prepend(p);
-}
-function formatMoney(n){ return 'Rp ' + n; }
+		<div id="player7input" class="player-input">
+			Player 7: <input type="text" id="player7name" title="Player name" maxlength="16" value="Player 7" />
+			<select id="player7color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option selected="selected" style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player7ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player7name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-/* Build a simplified 40-tile board */
-function buildTiles(){
-  // Minimal Monopoly-like names and types:
-  const names = [
-    {name:'GO', type:'go'}, //0
-    {name:'Mediterranean Ave', type:'property', price:60},
-    {name:'Community Chest', type:'community'},
-    {name:'Baltic Ave', type:'property', price:60},
-    {name:'Income Tax', type:'tax', amount:200},
-    {name:'Reading Railroad', type:'property', price:200},
-    {name:'Oriental Ave', type:'property', price:100},
-    {name:'Chance', type:'chance'},
-    {name:'Vermont Ave', type:'property', price:100},
-    {name:'Connecticut Ave', type:'property', price:120},
-    {name:'Jail', type:'jail'}, //10
-    {name:'St. Charles Place', type:'property', price:140},
-    {name:'Electric Company', type:'utility', price:150},
-    {name:'States Ave', type:'property', price:140},
-    {name:'Virginia Ave', type:'property', price:160},
-    {name:'Pennsylvania Railroad', type:'property', price:200},
-    {name:'St. James Place', type:'property', price:180},
-    {name:'Community Chest', type:'community'},
-    {name:'Tennessee Ave', type:'property', price:180},
-    {name:'New York Ave', type:'property', price:200},
-    {name:'Free Parking', type:'free'}, //20
-    {name:'Kentucky Ave', type:'property', price:220},
-    {name:'Chance', type:'chance'},
-    {name:'Indiana Ave', type:'property', price:220},
-    {name:'Illinois Ave', type:'property', price:240},
-    {name:'B. & O. Railroad', type:'property', price:200},
-    {name:'Atlantic Ave', type:'property', price:260},
-    {name:'Ventnor Ave', type:'property', price:260},
-    {name:'Water Works', type:'utility', price:150},
-    {name:'Marvin Gardens', type:'property', price:280},
-    {name:'Go To Jail', type:'goToJail'}, //30
-    {name:'Pacific Ave', type:'property', price:300},
-    {name:'North Carolina Ave', type:'property', price:300},
-    {name:'Community Chest', type:'community'},
-    {name:'Pennsylvania Ave', type:'property', price:320},
-    {name:'Short Line', type:'property', price:200},
-    {name:'Chance', type:'chance'},
-    {name:'Park Place', type:'property', price:350},
-    {name:'Luxury Tax', type:'tax', amount:100},
-    {name:'Boardwalk', type:'property', price:400} //39
-  ];
+		<div id="player8input" class="player-input">
+			Player 8: <input type="text" id="player8name" title="Player name" maxlength="16" value="Player 8" />
+			<select id="player8color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option selected="selected" style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player8ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player8name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
 
-  // create tiles array of 40
-  state.tiles = names.map((t,i) => ({
-    id:i,
-    name:t.name,
-    type:t.type,
-    price: t.price || 0,
-    amount: t.amount || 0,
-    owner: null
-  }));
-}
+		<div style="margin: 20px 0px;">
+			<input type="button" value="Start Game" onclick="setup();" title="Begin playing." />
+		</div>
 
-/* Render board as grid of tiles in positions that follow outer ring:
-   We'll map indices to grid positions (11x11) and use absolute placement.
-   Simplified approach: fill the outer cells with tiles in order 0..39 clockwise.
-*/
-function renderBoard(){
-  boardEl.innerHTML = '';
-  const gridSize = 11;
-  const tileSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tile-size')) || 80;
+		<div id="noF5">Note: Refreshing this page or navigating away from it may end your game without warning.</div>
+	</div>
 
-  // create 11x11 cells but only fill outer ring
-  const cells = [];
-  for(let r=0;r<gridSize;r++){
-    for(let c=0;c<gridSize;c++){
-      const idx = r*gridSize + c;
-      const cell = document.createElement('div');
-      cell.style.gridRowStart = r+1;
-      cell.style.gridColumnStart = c+1;
-      cell.style.width = '100%';
-      cell.style.height = '100%';
-      cell.style.display = 'flex';
-      cell.style.alignItems = 'center';
-      cell.style.justifyContent = 'center';
-      cell.style.padding = '0';
-      cell.style.boxSizing = 'border-box';
-      boardEl.appendChild(cell);
-      cells.push({r,c,el:cell});
-    }
-  }
+	<div id="control">
+		<table>
+			<tr>
+				<td style="text-align: left; vertical-align: top; border: none;">
+					<div id="menu">
+						<table id="menutable" cellspacing="0">
+							<tr>
+								<td class="menu-item" id="buy-menu-item">
 
-  // compute outer ring coordinates in clockwise order starting bottom-right (GO at bottom-right)
-  const ring = [];
-  // bottom row right to left (0..10) -> map to columns 10..0 at row 10
-  for(let c=10;c>=0;c--) ring.push({r:10,c});
-  // left column bottom-1 to top+1 (9..1) at col 0
-  for(let r=9;r>=1;r--) ring.push({r,c:0});
-  // top row left to right (0..10) at row 0
-  for(let c=0;c<=10;c++) ring.push({r:0,c});
-  // right column top+1 to bottom-1 (1..9) at col 10
-  for(let r=1;r<=9;r++) ring.push({r,c:10});
+									<a href="javascript:void(0);" title="View alerts and buy the property you landed on.">Buy</a>
+								</td>
+								<td class="menu-item" id="manage-menu-item">
 
-  // Use first 40 positions of ring as tile placements
-  for(let i=0;i<40;i++){
-    const pos = ring[i];
-    const cellIndex = pos.r*11 + pos.c;
-    const cell = cells[cellIndex].el;
+									<a href="javascript:void(0);" title="View, mortgage, and improve your property. ">Manage</a>
+								</td>
+								<td class="menu-item" id="trade-menu-item">
 
-    const tile = document.createElement('div');
-    tile.className = 'tile';
-    tile.dataset.index = i;
-    tile.style.width = '100%';
-    tile.style.height = '100%';
-    tile.style.display = 'flex';
-    tile.style.flexDirection = 'column';
-    tile.style.justifyContent = 'center';
-    tile.style.alignItems = 'center';
-    tile.style.padding = '6px';
-    tile.style.cursor = 'pointer';
+									<a href="javascript:void(0);" title="Exchange property with other players.">Trade</a>
+								</td>
+							</tr>
+						</table>
+					</div>
 
-    const title = document.createElement('div');
-    title.className = 'title';
-    title.textContent = state.tiles[i].name;
-    title.style.fontSize = '11px';
-    title.style.fontWeight = '600';
-    tile.appendChild(title);
+					<div id="buy">
+						<div id="alert"></div>
+						<div id="landed"></div>
+					</div>
 
-    const sub = document.createElement('div');
-    sub.className = 'sub';
-    sub.style.fontSize='11px';
-    sub.style.marginTop='6px';
-    if(state.tiles[i].type === 'property' || state.tiles[i].type === 'utility'){
-      sub.textContent = formatMoney(state.tiles[i].price);
-      tile.classList.add('property');
-    } else {
-      sub.textContent = state.tiles[i].type;
-    }
-    tile.appendChild(sub);
+					<div id="manage">
+						<div id="option">
+							<div id="buildings" title="Available buildings"></div>
+							<input type="button" value="Buy house" id="buyhousebutton"/>
+							<input type="button" value="Mortgage" id="mortgagebutton" />
+							<input type="button" value="Sell house" id="sellhousebutton"/>
+						</div>
+						<div id="owned"></div>
+					</div>
+				</td>
+				<td style="vertical-align: top; border: none;">
+					<div id="quickstats" style="">
+							<div><span id="pname" >Player 1</span>:</div>
+							<div><span id="pmoney">$1500</span></div>
+					</div>
+					<div>
+						<div id="die0" title="Die" class="die die-no-img"></div>
+						<div id="die1" title="Die" class="die die-no-img"></div>
+					</div>
 
-    // ownership outline
-    if(state.tiles[i].owner === 'player') tile.classList.add('owned-player');
-    if(state.tiles[i].owner === 'computer') tile.classList.add('owned-computer');
+				</td>
+			</tr><tr>
+				<td colspan="2" style="border: none">
+					<div style="padding-top: 8px;">
+						<input type="button" id="nextbutton" title="Roll the dice and move your token accordingly." value="Roll Dice"/>
+						<input type="button" id="resignbutton" title="If you cannot pay your debt then you must resign from the game." value="Resign" onclick="game.resign();" />
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
 
-    // click to inspect / simulate landing
-    tile.addEventListener('click', () => {
-      const t = state.tiles[i];
-      handleTileInspect('player', t);
-    });
+	<div id="trade">
+		<table style="border-spacing: 3px;">
+			<tr>
+				<td class="trade-cell">
+					<div id="trade-leftp-name"></div>
+				</td>
+				<td class="trade-cell">
+					<div id="trade-rightp-name"></div>
+				</td>
+			</tr>
+			<tr>
+				<td class="trade-cell">
+					$&nbsp;<input id="trade-leftp-money" value="0" title="Enter amount to exchange with the other player." />
+				</td>
+				<td class="trade-cell">
+					$&nbsp;<input id="trade-rightp-money" value="0" title="Enter amount to exchange with the other player." />
+				</td>
+			</tr>
+			<tr>
+				<td id="trade-leftp-property" class="trade-cell"></td>
+				<td id="trade-rightp-property" class="trade-cell"></td>
+			</tr>
+			<tr>
+				<td colspan="2" class="trade-cell">
+					<input type="button" id="proposetradebutton" value="Propose Trade" onclick="game.proposeTrade();" title="Exchange the money and properties that are checked above." />
+					<input type="button" id="canceltradebutton" value="Cancel Trade" onclick='game.cancelTrade();' title="Cancel the trade." />
+					<input type="button" id="accepttradebutton" value="Accept Trade" onclick="game.acceptTrade();" title="Accept the proposed trade." />
+					<input type="button" id="rejecttradebutton" value="Reject Trade" onclick='game.cancelTrade();' title="Reject the proposed trade." />
+				</td>
+			</tr>
+		</table>
+	</div>
 
-    cell.appendChild(tile);
-  }
-
-  // place markers initially
-  placeMarkers();
-}
-
-/* Place markers (absolute positioned) above board squares */
-function placeMarkers(){
-  // find board top-left corner and tile size to compute positions
-  const rect = boardEl.getBoundingClientRect();
-  const tileW = rect.width / 11;
-  const tileH = rect.height / 11;
-
-  // compute ring positions again to map tile index -> pixel center
-  const positions = [];
-  // same ring order used before
-  const ring = [];
-  for(let c=10;c>=0;c--) ring.push({r:10,c});
-  for(let r=9;r>=1;r--) ring.push({r,c:0});
-  for(let c=0;c<=10;c++) ring.push({r:0,c});
-  for(let r=1;r<=9;r++) ring.push({r,c:10});
-
-  // pixel centers
-  for(let i=0;i<40;i++){
-    const p = ring[i];
-    const left = rect.left + (p.c + 0.5) * tileW;
-    const top = rect.top + (p.r + 0.5) * tileH;
-    positions.push({left, top});
-  }
-
-  // place player marker
-  const pPos = positions[state.player.pos];
-  markerPlayer.style.left = pPos.left + 'px';
-  markerPlayer.style.top = pPos.top + 'px';
-  markerPlayer.style.display = 'flex';
-
-  const cPos = positions[state.computer.pos];
-  markerComputer.style.left = cPos.left + 'px';
-  markerComputer.style.top = cPos.top + 'px';
-  markerComputer.style.display = 'flex';
-}
-
-/* handle click inspect */
-function handleTileInspect(who, tile){
-  // show modal with actions depending on tile.type
-  const player = state[who];
-  switch(tile.type){
-    case 'property':
-    case 'utility':
-      if(tile.owner === null){
-        showModal(`${tile.name}`, `Harga: ${formatMoney(tile.price)}\nKlik OK untuk membeli (otomatis jika giliran dan punya uang).`);
-        modalOk.onclick = () => {
-          closeModal();
-          if(state.currentTurn === 'player' && who === 'player'){
-            attemptBuyProperty('player', tile);
-          } else {
-            showModal('Info', 'Bukan giliran pembelian / otomatis dibeli oleh komputer saat gilirannya.');
-            modalOk.onclick = closeModal;
-          }
-        };
-      } else {
-        showModal(`${tile.name}`, `Dimiliki oleh: ${tile.owner}\nHarga: ${formatMoney(tile.price)}`);
-        modalOk.onclick = closeModal;
-      }
-      break;
-    case 'tax':
-      showModal(tile.name, `Bayar pajak ${formatMoney(tile.amount)}`);
-      modalOk.onclick = closeModal;
-      break;
-    case 'chance':
-    case 'community':
-      showModal(tile.name, `Ambil kartu dari deck ${tile.type === 'chance' ? '(biru untuk pemain)' : '(merah untuk komputer)'}`);
-      modalOk.onclick = () => {
-        closeModal();
-        if(who === 'player') drawCard('player', tile.type);
-        else drawCard('computer', tile.type);
-      };
-      break;
-    case 'jail':
-      showModal('JAIL', 'Di sini hanya singgah (Jail).');
-      modalOk.onclick = closeModal;
-      break;
-    case 'go':
-      showModal('GO', 'Lewat GO: terima Rp 200');
-      modalOk.onclick = closeModal;
-      break;
-    case 'goToJail':
-      showModal('Go To Jail', 'Kirim ke Jail.');
-      modalOk.onclick = closeModal;
-      break;
-    default:
-      showModal(tile.name, `Tipe: ${tile.type}`);
-      modalOk.onclick = closeModal;
-  }
-}
-
-/* attempt to buy property */
-function attemptBuyProperty(who, tile){
-  if(tile.owner !== null){ log('Properti sudah dimiliki.'); return; }
-  const player = state[who];
-  if(player.money >= tile.price){
-    player.money -= tile.price;
-    tile.owner = who;
-    player.owned.push(tile.id);
-    updateUI();
-    renderBoard();
-    log(`${capitalize(who)} membeli ${tile.name} seharga ${formatMoney(tile.price)}.`);
-  } else {
-    log(`${capitalize(who)} tidak cukup uang untuk membeli ${tile.name}.`);
-    showModal('Uang Tidak Cukup', `${capitalize(who)} membutuhkan ${formatMoney(tile.price - player.money)} lagi.`);
-  }
-}
-
-/* draw a card */
-function drawCard(who, type){
-  // type 'chance' or 'community' - if player draws, show enlarged modal with text and OK
-  let deck = type === 'chance' ? state.chanceDeck : state.communityDeck;
-  if(deck.length === 0){
-    // reinitialize deck if empty
-    initDecks();
-    deck = type === 'chance' ? state.chanceDeck : state.communityDeck;
-  }
-  const card = deck.pop();
-  log(`${capitalize(who)} mengambil kartu: ${card.title}`);
-  if(who === 'player'){
-    // show card modal enlarged and allow click to close
-    showModal(card.title, card.text);
-    modalOk.onclick = () => {
-      closeModal();
-      applyCardEffect(who, card);
-    };
-  } else {
-    // for computer, auto-apply but show small modal flip
-    showModal(`Kartu komputer`, card.title + ' — ' + card.text);
-    modalOk.onclick = () => {
-      closeModal();
-      applyCardEffect(who, card);
-    };
-  }
-}
-
-function applyCardEffect(who, card){
-  const p = state[who];
-  switch(card.type){
-    case 'money':
-      p.money += card.amount;
-      updateUI();
-      log(`${capitalize(who)} menerima ${formatMoney(card.amount)} (kartu).`);
-      break;
-    case 'move':
-      // move steps (positive forward)
-      moveToken(who, card.steps);
-      break;
-    case 'goto':
-      p.pos = card.pos;
-      updateUI();
-      renderBoard();
-      log(`${capitalize(who)} dipindah ke ${state.tiles[card.pos].name} oleh kartu.`);
-      handleLanding(who);
-      break;
-    default:
-      log('Kartu tidak memiliki efek yang terdefinisi.');
-  }
-}
-
-/* handle landing on tile after move completes */
-function handleLanding(who){
-  const p = state[who];
-  const tile = state.tiles[p.pos];
-  log(`${capitalize(who)} mendarat di ${tile.name} (${tile.type})`);
-  if(tile.type === 'property' || tile.type === 'utility'){
-    if(tile.owner === null){
-      if(who === 'player'){
-        // offer buy automatically by modal
-        showModal(tile.name, `Harga: ${formatMoney(tile.price)}\nKlik OK untuk membeli.`);
-        modalOk.onclick = () => {
-          closeModal();
-          attemptBuyProperty(who, tile);
-        };
-      } else {
-        // computer AI: buy if has > price + 300
-        if(state.computer.money > tile.price + 300){
-          attemptBuyProperty('computer', tile);
-        } else {
-          log('Komputer melewatkan pembelian.');
-        }
-      }
-    } else if(tile.owner !== who){
-      // pay rent simplified = 10% of price
-      const rent = Math.max(10, Math.round(tile.price * 0.1));
-      const payer = state[who];
-      const owner = state[tile.owner];
-      payer.money -= rent;
-      owner.money += rent;
-      updateUI();
-      log(`${capitalize(who)} membayar sewa ${formatMoney(rent)} ke ${tile.owner}.`);
-    }
-  } else if(tile.type === 'tax'){
-    const amt = tile.amount;
-    state[who].money -= amt;
-    updateUI();
-    log(`${capitalize(who)} membayar pajak ${formatMoney(amt)}.`);
-  } else if(tile.type === 'chance' || tile.type === 'community'){
-    drawCard(who, tile.type);
-  } else if(tile.type === 'go'){
-    state[who].money += 200;
-    updateUI();
-    log(`${capitalize(who)} melewati GO dan menerima Rp 200.`);
-  } else if(tile.type === 'goToJail'){
-    state[who].pos = 10; // jail index
-    updateUI();
-    log(`${capitalize(who)} dikirim ke Jail.`);
-  }
-  renderBoard();
-}
-
-/* player rolls dice and moves */
-async function playerRoll(){
-  const roll = rollDice();
-  log(`Pemain melempar dadu: ${roll}`);
-  await moveToken('player', roll);
-  handleLanding('player');
-  // after landing allow end turn
-}
-
-/* simple dice */
-function rollDice(){ return Math.floor(Math.random()*6)+1 + Math.floor(Math.random()*6)+1; }
-
-/* move token step-by-step */
-function moveToken(who, steps){
-  return new Promise((resolve) => {
-    const p = state[who];
-    let remaining = steps;
-    const stepInterval = 180; // ms per step (fast but visible)
-    const interval = setInterval(() => {
-      p.pos = (p.pos + 1) % 40;
-      placeMarkers();
-      remaining--;
-      if(remaining <= 0){
-        clearInterval(interval);
-        resolve();
-      }
-    }, stepInterval);
-  });
-}
-
-/* end turn -> computer acts */
-async function endTurn(){
-  state.currentTurn = 'computer';
-  turnTextEl.textContent = 'Komputer';
-  log('Giliran komputer.');
-  await computerPlay();
-  state.currentTurn = 'player';
-  turnTextEl.textContent = 'Pemain';
-  updateUI();
-}
-
-/* very simple computer logic */
-async function computerPlay(){
-  // roll
-  await delay(600);
-  const roll = rollDice();
-  log(`Komputer melempar dadu: ${roll}`);
-  await moveToken('computer', roll);
-  handleLanding('computer');
-
-  // small delay then end
-  await delay(700);
-  log('Giliran komputer selesai.');
-}
-
-/* helpers */
-function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-function delay(ms){ return new Promise(r => setTimeout(r, ms)); }
-
-/* init card decks */
-function initDecks(){
-  // simple small decks
-  state.chanceDeck = [
-    {title:'Dapat Hadiah', text:'Kamu menerima Rp 200', type:'money', amount:200},
-    {title:'Majulah 3 langkah', text:'Maju 3 langkah', type:'move', steps:3},
-    {title:'Kembalikan ke GO', text:'Kamu dipindah ke GO', type:'goto', pos:0},
-    {title:'Bayar Biaya', text:'Bayar Rp 100', type:'money', amount:-100}
-  ].sort(()=>Math.random()-0.5);
-
-  state.communityDeck = [
-    {title:'Hadiah Komunitas', text:'Terima Rp 150', type:'money', amount:150},
-    {title:'Mundur 2 langkah', text:'Mundur 2 langkah', type:'move', steps:-2},
-    {title:'Denda', text:'Bayar Rp 50', type:'money', amount:-50},
-    {title:'Pergi ke Jail', text:'Pergi ke Jail', type:'goto', pos:10}
-  ].sort(()=>Math.random()-0.5);
-}
-
-/* update balances UI */
-function updateUI(){
-  playerBalanceEl.textContent = formatMoney(state.player.money);
-  computerBalanceEl.textContent = formatMoney(state.computer.money);
-  actionArea.textContent = `Properti pemain: ${state.player.owned.length}, properti komputer: ${state.computer.owned.length}`;
-}
-
-/* bootstrap */
-function init(){
-  buildTiles();
-  initDecks();
-  renderBoard();
-  updateUI();
-  log('Game dimulai. Klik Roll Dice untuk bermain.');
-}
-
-/* ensure markers reposition on resize */
-window.addEventListener('resize', ()=> {
-  placeMarkers();
-});
-
-/* expose quick debug in console */
-window._state = state;
-
-init();
-</script>
 </body>
-</html>
+            </html><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<title>Monopoly</title>
+	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script type="text/javascript" src="classicedition.js"></script>
+	<!-- Comment out the previous line and uncomment the next one to enable the New York City Edition -->
+	<!-- <script type="text/javascript" src="newyorkcityedition.js"></script> -->
+	<script type="text/javascript" src="ai.js"></script>
+	<script type="text/javascript" src="monopoly.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css" />
+</head>
+
+<body>
+	<div id="popupbackground"></div>
+	<div id="popupwrap">
+		<div id="popup">
+			<div style="position: relative;">
+				<!-- <img id="popupclose" src="Images/close.png" title="Close" alt="x" onclick="hide('popupbackground'); hide('popupwrap');" /> -->
+				<div id="popuptext"></div>
+				<div id="popupdrag"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="statsbackground"></div>
+	<div id="statswrap">
+		<div id="stats">
+			<div style="position: relative;">
+				<img id="statsclose" src="images/close.png" title="Close" alt="x" />
+				<div id="statstext"></div>
+				<div id="statsdrag"></div>
+			</div>
+		</div>
+	</div>
+
+	<p id="noscript">
+		Note: This page will not function without JavaScript.
+	</p>
+
+	<div id="refresh">
+		Refresh this page to start a new game.
+	</div>
+
+	<!-- <div id="enlarge"></div> -->
+
+	<div id="deed">
+		<div id="deed-normal" style="display: none;">
+			<div id="deed-header">
+				<div style="margin: 5px; font-size: 11px;">T I T L E&nbsp;&nbsp;D E E D</div>
+				<div id="deed-name"></div>
+			</div>
+			<table id="deed-table">
+				<tr>
+					<td colspan="2">
+						RENT&nbsp;$<span id="deed-baserent">12</span>.
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 1 House</td>
+					<td style="text-align: right;">$&nbsp;&nbsp;&nbsp;<span id="deed-rent1">60</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 2 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent2">180</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 3 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent3">500</span>.</td>
+				</tr>
+				<tr>
+					<td style="text-align: left;">With 4 Houses</td>
+					<td style="text-align: right;"><span id="deed-rent4">700</span>.</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<div style="margin-bottom: 8px;">With HOTEL $<span id="deed-rent5">900</span>.</div>
+						<div>Mortgage Value $<span id="deed-mortgage">80</span>.</div>
+						<div>Houses cost $<span id="deed-houseprice">100</span>. each</div>
+						<div>Hotels, $<span id="deed-hotelprice">100</span>. plus 4 houses</div>
+						<div style="font-size: 9px; font-style: italic; margin-top: 5px;">If a player owns ALL the Lots of any Color-Group, the rent is Doubled on Unimproved Lots in that group.</div>
+					</td>
+				</tr>
+			</table>
+		</div>
+
+		<div id="deed-mortgaged">
+			<div id="deed-mortgaged-name"></div>
+			<p>&bull;</p>
+			<div>MORTGAGED</div>
+			<div> for $<span id="deed-mortgaged-mortgage">80</span></div>
+			<p>&bull;</p>
+			<div style="font-style: italic; font-size: 13px; margin: 10px;">Card must be turned this side up if property is mortgaged</div>
+		</div>
+
+		<div id="deed-special">
+			<div id="deed-special-name"></div>
+			<div id="deed-special-text"></div>
+			<div id="deed-special-footer">
+				Mortgage Value
+				<span style="float: right;">$<span id="deed-special-mortgage">100</span>.</span>
+			</div>
+		</div>
+	</div>
+
+	<table id="board">
+		<tr>
+			<td class="cell board-corner" id="cell20"></td>
+			<td class="cell board-top" id="cell21"></td>
+			<td class="cell board-top" id="cell22"></td>
+			<td class="cell board-top" id="cell23"></td>
+			<td class="cell board-top" id="cell24"></td>
+			<td class="cell board-top" id="cell25"></td>
+			<td class="cell board-top" id="cell26"></td>
+			<td class="cell board-top" id="cell27"></td>
+			<td class="cell board-top" id="cell28"></td>
+			<td class="cell board-top" id="cell29"></td>
+			<td class="cell board-corner" id="cell30"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell19"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell31"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell18"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell32"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell17"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell33"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell16"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell34"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell15"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell35"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell14"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell36"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell13"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell37"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell12"></td>
+			<td colspan="9" class="board-center"></td>
+			<td class="cell board-right" id="cell38"></td>
+		</tr><tr>
+			<td class="cell board-left" id="cell11"></td>
+			<td colspan="9" class="board-center">
+				<div id="jail"></div>
+			</td>
+			<td class="cell board-right" id="cell39"></td>
+		</tr><tr>
+			<td class="cell board-corner" id="cell10"></td>
+			<td class="cell board-bottom" id="cell9"></td>
+			<td class="cell board-bottom" id="cell8"></td>
+			<td class="cell board-bottom" id="cell7"></td>
+			<td class="cell board-bottom" id="cell6"></td>
+			<td class="cell board-bottom" id="cell5"></td>
+			<td class="cell board-bottom" id="cell4"></td>
+			<td class="cell board-bottom" id="cell3"></td>
+			<td class="cell board-bottom" id="cell2"></td>
+			<td class="cell board-bottom" id="cell1"></td>
+			<td class="cell board-corner" id="cell0"></td>
+		</tr>
+	</table>
+
+	<div id="moneybarwrap">
+		<div id="moneybar">
+			<table>
+				<tr id="moneybarrow1" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p1arrow" class="money-bar-arrow" alt=">"/></td>
+					<td id="p1moneybar" class="moneybarcell">
+						<div><span id="p1moneyname" >Player 1</span>:</div>
+						<div>$<span id="p1money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow2" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p2arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p2moneybar" class="moneybarcell">
+						<div><span id="p2moneyname" >Player 2</span>:</div>
+						<div>$<span id="p2money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow3" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p3arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p3moneybar" class="moneybarcell">
+						<div><span id="p3moneyname" >Player 3</span>:</div>
+						<div>$<span id="p3money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow4" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p4arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p4moneybar" class="moneybarcell">
+						<div><span id="p4moneyname" >Player 4</span>:</div>
+						<div>$<span id="p4money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow5" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p5arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p5moneybar" class="moneybarcell">
+						<div><span id="p5moneyname" >Player 5</span>:</div>
+						<div>$<span id="p5money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow6" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p6arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p6moneybar" class="moneybarcell">
+						<div><span id="p6moneyname" >Player 6</span>:</div>
+						<div>$<span id="p6money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow7" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p7arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p7moneybar" class="moneybarcell">
+						<div><span id="p7moneyname" >Player 7</span>:</div>
+						<div>$<span id="p7money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrow8" class="money-bar-row">
+					<td class="moneybararrowcell"><img src="images/arrow.png" id="p8arrow" class="money-bar-arrow" alt=">" /></td>
+					<td id="p8moneybar" class="moneybarcell">
+						<div><span id="p8moneyname" >Player 8</span>:</div>
+						<div>$<span id="p8money">1500</span></div>
+					</td>
+				</tr>
+				<tr id="moneybarrowbutton">
+					<td class="moneybararrowcell">&nbsp;</td>
+					<td style="border: none;">
+						<input type="button" id="viewstats" value="View stats" title="View a pop-up window that shows a list of each player's properties." />
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<div id="setup">
+		<div style="margin-bottom: 20px;">
+			Select number of players.
+			<select id="playernumber" title="Select the number of players for the game.">
+				<option>2</option>
+				<option>3</option>
+				<option selected="selected">4</option>
+				<option>5</option>
+				<option>6</option>
+				<option>7</option>
+				<option>8</option>
+			</select>
+		</div>
+
+		<div id="player1input" class="player-input">
+			Player 1: <input type="text" id="player1name" title="Player name" maxlength="16" value="Player 1" />
+			<select id="player1color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option selected="selected" style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player1ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player1name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player2input" class="player-input">
+			Player 2: <input type="text" id="player2name" title="Player name" maxlength="16" value="Player 2" />
+			<select id="player2color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option selected="selected" style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player2ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player2name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player3input" class="player-input">
+			Player 3: <input type="text" id="player3name" title="Player name" maxlength="16" value="Player 3" />
+			<select id="player3color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option selected="selected" style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player3ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player3name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player4input" class="player-input">
+			Player 4: <input type="text" id="player4name" title="Player name" maxlength="16" value="Player 4" />
+			<select id="player4color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option selected="selected" style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player4ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player4name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player5input" class="player-input">
+			Player 5: <input type="text" id="player5name" title="Player name" maxlength="16" value="Player 5" />
+			<select id="player5color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option selected="selected" style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player5ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player5name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player6input" class="player-input">
+			Player 6: <input type="text" id="player6name" title="Player name" maxlength="16" value="Player 6" />
+			<select id="player6color" title="Player color">
+				<option selected="selected" style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player6ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player6name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player7input" class="player-input">
+			Player 7: <input type="text" id="player7name" title="Player name" maxlength="16" value="Player 7" />
+			<select id="player7color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option selected="selected" style="color: orange;">Orange</option>
+				<option style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player7ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player7name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div id="player8input" class="player-input">
+			Player 8: <input type="text" id="player8name" title="Player name" maxlength="16" value="Player 8" />
+			<select id="player8color" title="Player color">
+				<option style="color: aqua;">Aqua</option>
+				<option style="color: black;">Black</option>
+				<option style="color: blue;">Blue</option>
+				<option style="color: fuchsia;">Fuchsia</option>
+				<option style="color: gray;">Gray</option>
+				<option style="color: green;">Green</option>
+				<option style="color: lime;">Lime</option>
+				<option style="color: maroon;">Maroon</option>
+				<option style="color: navy;">Navy</option>
+				<option style="color: olive;">Olive</option>
+				<option style="color: orange;">Orange</option>
+				<option selected="selected" style="color: purple;">Purple</option>
+				<option style="color: red;">Red</option>
+				<option style="color: silver;">Silver</option>
+				<option style="color: teal;">Teal</option>
+				<option style="color: yellow;">Yellow</option>
+			</select>
+			<select id="player8ai" title="Choose whether this player is controled by a human or by the computer." onclick="document.getElementById('player8name').disabled = this.value !== '0';">
+				<option value="0" selected="selected">Human</option>
+				<option value="1">AI (Test)</option>
+			</select>
+		</div>
+
+		<div style="margin: 20px 0px;">
+			<input type="button" value="Start Game" onclick="setup();" title="Begin playing." />
+		</div>
+
+		<div id="noF5">Note: Refreshing this page or navigating away from it may end your game without warning.</div>
+	</div>
+
+	<div id="control">
+		<table>
+			<tr>
+				<td style="text-align: left; vertical-align: top; border: none;">
+					<div id="menu">
+						<table id="menutable" cellspacing="0">
+							<tr>
+								<td class="menu-item" id="buy-menu-item">
+
+									<a href="javascript:void(0);" title="View alerts and buy the property you landed on.">Buy</a>
+								</td>
+								<td class="menu-item" id="manage-menu-item">
+
+									<a href="javascript:void(0);" title="View, mortgage, and improve your property. ">Manage</a>
+								</td>
+								<td class="menu-item" id="trade-menu-item">
+
+									<a href="javascript:void(0);" title="Exchange property with other players.">Trade</a>
+								</td>
+							</tr>
+						</table>
+					</div>
+
+					<div id="buy">
+						<div id="alert"></div>
+						<div id="landed"></div>
+					</div>
+
+					<div id="manage">
+						<div id="option">
+							<div id="buildings" title="Available buildings"></div>
+							<input type="button" value="Buy house" id="buyhousebutton"/>
+							<input type="button" value="Mortgage" id="mortgagebutton" />
+							<input type="button" value="Sell house" id="sellhousebutton"/>
+						</div>
+						<div id="owned"></div>
+					</div>
+				</td>
+				<td style="vertical-align: top; border: none;">
+					<div id="quickstats" style="">
+							<div><span id="pname" >Player 1</span>:</div>
+							<div><span id="pmoney">$1500</span></div>
+					</div>
+					<div>
+						<div id="die0" title="Die" class="die die-no-img"></div>
+						<div id="die1" title="Die" class="die die-no-img"></div>
+					</div>
+
+				</td>
+			</tr><tr>
+				<td colspan="2" style="border: none">
+					<div style="padding-top: 8px;">
+						<input type="button" id="nextbutton" title="Roll the dice and move your token accordingly." value="Roll Dice"/>
+						<input type="button" id="resignbutton" title="If you cannot pay your debt then you must resign from the game." value="Resign" onclick="game.resign();" />
+					</div>
+				</td>
+			</tr>
+		</table>
+	</div>
+
+	<div id="trade">
+		<table style="border-spacing: 3px;">
+			<tr>
+				<td class="trade-cell">
+					<div id="trade-leftp-name"></div>
+				</td>
+				<td class="trade-cell">
+					<div id="trade-rightp-name"></div>
+				</td>
+			</tr>
+			<tr>
+				<td class="trade-cell">
+					$&nbsp;<input id="trade-leftp-money" value="0" title="Enter amount to exchange with the other player." />
+				</td>
+				<td class="trade-cell">
+					$&nbsp;<input id="trade-rightp-money" value="0" title="Enter amount to exchange with the other player." />
+				</td>
+			</tr>
+			<tr>
+				<td id="trade-leftp-property" class="trade-cell"></td>
+				<td id="trade-rightp-property" class="trade-cell"></td>
+			</tr>
+			<tr>
+				<td colspan="2" class="trade-cell">
+					<input type="button" id="proposetradebutton" value="Propose Trade" onclick="game.proposeTrade();" title="Exchange the money and properties that are checked above." />
+					<input type="button" id="canceltradebutton" value="Cancel Trade" onclick='game.cancelTrade();' title="Cancel the trade." />
+					<input type="button" id="accepttradebutton" value="Accept Trade" onclick="game.acceptTrade();" title="Accept the proposed trade." />
+					<input type="button" id="rejecttradebutton" value="Reject Trade" onclick='game.cancelTrade();' title="Reject the proposed trade." />
+				</td>
+			</tr>
+		</table>
+	</div>
+
+</body>
+  </html>
